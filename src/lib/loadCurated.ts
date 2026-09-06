@@ -72,6 +72,8 @@ function mapGame(raw: Record<string, unknown>): PlayerGameLog {
     fg3m: toNumber(raw.fg3m),
     fg_pct: toNullableNumber(raw.fg_pct),
     ft_pct: toNullableNumber(raw.ft_pct),
+    team_id: String(raw.team_id ?? ""),
+    team_abbreviation: String(raw.team_abbreviation ?? ""),
   };
 }
 

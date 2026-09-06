@@ -1,9 +1,27 @@
 :root {
-  --background: #07080f;
-  --foreground: #f1f5f9;
-  --orange: #f97316;
-  --cyan: #22d3ee;
-  --magenta: #e879f9;
+  /* Premium blue void — subdued chrome */
+  --fh-void-0: #060a12;
+  --fh-void-1: #0a1220;
+  --fh-void-2: #0e1830;
+  --fh-surface: rgba(12, 22, 40, 0.62);
+  --fh-surface-strong: rgba(10, 18, 34, 0.82);
+  --fh-border: rgba(125, 180, 255, 0.12);
+  --fh-border-strong: rgba(96, 165, 250, 0.28);
+  --fh-text: #e8eef8;
+  --fh-text-muted: #8fa3bf;
+  --fh-text-dim: #6b7f9a;
+  /* Neon blue accents — sparingly (focus / selection only) */
+  --fh-neon: #4de1ff;
+  --fh-neon-soft: rgba(77, 225, 255, 0.18);
+  --fh-neon-glow: rgba(77, 225, 255, 0.35);
+  --fh-accent: #38bdf8;
+  --fh-accent-deep: #1d4ed8;
+  --background: var(--fh-void-0);
+  --foreground: var(--fh-text);
+  /* legacy aliases (retire orange hero) */
+  --orange: var(--fh-accent);
+  --cyan: var(--fh-neon);
+  --magenta: #60a5fa;
 }
 
 html,
@@ -16,15 +34,16 @@ body {
 body {
   color: var(--foreground);
   background:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(249, 115, 22, 0.18), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(34, 211, 238, 0.12), transparent 50%),
-    radial-gradient(ellipse 50% 50% at 70% 90%, rgba(232, 121, 249, 0.1), transparent 55%),
-    linear-gradient(180deg, #0a0b14 0%, #07080f 40%, #0c0e18 100%);
+    radial-gradient(ellipse 90% 55% at 15% -15%, rgba(29, 78, 216, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 95% 5%, rgba(56, 189, 248, 0.1), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 60% 100%, rgba(14, 24, 48, 0.9), transparent 60%),
+    linear-gradient(180deg, var(--fh-void-1) 0%, var(--fh-void-0) 45%, #050814 100%);
   background-attachment: fixed;
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
 }
 
 * {
@@ -36,8 +55,16 @@ a {
   text-decoration: none;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--fh-neon);
+  outline-offset: 2px;
+}
+
 code {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
+  color: var(--fh-neon);
 }
 
 button,
@@ -46,6 +73,8 @@ input,
 select,
 textarea {
   touch-action: manipulation;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease,
+    box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
 @media (max-width: 800px) {

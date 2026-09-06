@@ -98,6 +98,8 @@ export interface PlayerGameLog {
   fg3m: number;
   fg_pct: number | null;
   ft_pct: number | null;
+  team_id: string;
+  team_abbreviation: string;
 }
 
 /** Chart Y-axis stat keys (Phase 3). */
