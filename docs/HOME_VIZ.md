@@ -33,13 +33,14 @@ Documented at ship time (re-run via `/api/league-context`):
 | `min20` | **290** |
 | `top10min` | **59** |
 
-For `universe=all` · 2025-26 · `reg_only`:
+League aggregate spot-check (2025-26 · `reg_only`):
 
-| Metric | Value |
-|--------|-------|
-| League PTS (GP-weighted) | **≈ 10.67** |
-| League FG% (Σ fgm / Σ fga) | **≈ 0.471 (47.1%)** |
-| Σ gp | 26,649 |
+| universe | player_count | PTS (GPW) | FG% (Σ/Σ) |
+|----------|--------------|-----------|-----------|
+| `all` | 582 | **≈ 10.67** | **≈ 0.471 (47.1%)** |
+| `min20` (default) | 290 | **≈ 14.09** | **≈ 0.473 (47.3%)** |
+
+Formulas: counting = Σ(avg×gp)/Σ(gp); FG% = Σ sum_fgm / Σ sum_fga; 3PM = GP-weighted `avg_fg3m` only.
 
 ## Aggregate formulas
 
