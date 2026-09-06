@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPlayerGameLogs } from "@/lib/loadGameLogs";
-import { DEFAULT_SCOPE } from "@/lib/loadMart";
-import type { SeasonTypeScope } from "@/types/season_player_averages";
+import { parseScope } from "@/lib/scope";
 import { SEASON_OPTIONS } from "@/types/season_player_averages";
 
 export const runtime = "nodejs";
-
-function parseScope(v: string | null): SeasonTypeScope {
-  if (v === "reg_plus_playoffs") return "reg_plus_playoffs";
-  if (v === "playoff_only") return "playoff_only";
-  if (v === "reg_only") return "reg_only";
-  return DEFAULT_SCOPE;
-}
 
 function parseSeasons(v: string | null): string[] {
   if (!v) return [...SEASON_OPTIONS];

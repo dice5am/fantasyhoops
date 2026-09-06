@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NBA Fantasy — Season Averages & Player Charts",
+  title: "FantasyHoops — League Pulse & Player Charts",
   description:
-    "Glass Data table + Player game lines (Recharts) over parquet marts",
+    "Hybrid A1+A3 Home dashboard + Player explorer over parquet marts",
 };
 
 export default function RootLayout({

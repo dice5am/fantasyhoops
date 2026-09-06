@@ -6,6 +6,16 @@ import type {
   SeasonPlayerAverage,
   SeasonTypeScope,
 } from "@/types/season_player_averages";
+import {
+  buildLeagueContext,
+  DEFAULT_MIN_GP,
+  type FgPctHistBin,
+  type LeaderEntry,
+  type LeagueAvgs,
+  type LeagueContextPayload,
+} from "@/lib/leagueAggregates";
+import { getPrimaryTeamMap } from "@/lib/loadGameLogs";
+import { filterByUniverse, parseUniverse, type UniverseId } from "@/lib/universe";
 
 import path from "path";
 
@@ -51,7 +61,8 @@ function toNullableNumber(v: unknown): number | null {
 }
 
 function mapRow(raw: Record<string, unknown>): SeasonPlayerAverage {
-  // Keep raw avg_fg3m / sum_fg3m separate; API resolves display 3PM + source.
+  // Keep raw avg_fg3m / sum_fg3m separate; API resolves display 3PM + guard.
+  // 3PM display = avg_fg3m only — NEVER sum_fg3m/gp.
   const avgFg3m =
     "avg_fg3m" in raw ? toNullableNumber(raw.avg_fg3m) : null;
   const sumFg3m =
@@ -71,6 +82,10 @@ function mapRow(raw: Record<string, unknown>): SeasonPlayerAverage {
     avg_tov: toNumber(raw.avg_tov),
     avg_fg3m: avgFg3m as number,
     sum_fg3m: sumFg3m,
+    sum_fgm: "sum_fgm" in raw ? toNullableNumber(raw.sum_fgm) : null,
+    sum_fga: "sum_fga" in raw ? toNullableNumber(raw.sum_fga) : null,
+    sum_ftm: "sum_ftm" in raw ? toNullableNumber(raw.sum_ftm) : null,
+    sum_fta: "sum_fta" in raw ? toNullableNumber(raw.sum_fta) : null,
     fg_pct: toNullableNumber(raw.fg_pct),
     fg3_pct: toNullableNumber(raw.fg3_pct),
     ft_pct: toNullableNumber(raw.ft_pct),
@@ -149,4 +164,43 @@ export async function getPlayerDirectory(): Promise<PlayerDirectoryEntry[]> {
   return entries;
 }
 
-export { DEFAULT_SEASON, DEFAULT_SCOPE, martPath };
+export type { LeaderEntry, LeagueAvgs, FgPctHistBin, LeagueContextPayload };
+export type LeagueContext = LeagueContextPayload;
+
+/**
+ * GP-weighted league averages + top-5 leaders + FG% hist + stocks leaders.
+ * Accurate formulas live in leagueAggregates.ts.
+ */
+export async function getLeagueContext(params: {
+  season?: string;
+  season_type_scope?: SeasonTypeScope;
+  universe?: UniverseId | string;
+  min_gp?: number;
+  min_min?: number;
+  top_pct?: number;
+  teamByPlayer?: Map<string, string>;
+}): Promise<LeagueContextPayload> {
+  const season = params.season ?? DEFAULT_SEASON;
+  const season_type_scope = params.season_type_scope ?? DEFAULT_SCOPE;
+  const universe = parseUniverse(
+    typeof params.universe === "string" ? params.universe : undefined
+  );
+  const rows = await getSeasonPlayerAverages({ season, season_type_scope });
+  const filtered = filterByUniverse(rows, universe);
+  const teamByPlayer =
+    params.teamByPlayer ??
+    (await getPrimaryTeamMap({ season, season_type_scope }));
+  return buildLeagueContext(filtered, {
+    season,
+    season_type_scope,
+    universe,
+    teamByPlayer,
+    filters: {
+      min_gp: params.min_gp,
+      min_min: params.min_min,
+      top_pct: params.top_pct,
+    },
+  });
+}
+
+export { DEFAULT_SEASON, DEFAULT_SCOPE, martPath, DEFAULT_MIN_GP as MIN_GP_LEADERS };

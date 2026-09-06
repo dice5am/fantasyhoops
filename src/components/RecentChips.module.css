@@ -1,0 +1,60 @@
+.recentRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.85rem 1rem 0.15rem;
+}
+
+.recentLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fh-text-dim);
+}
+
+.recentChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.recentChip,
+.recentChipActive {
+  appearance: none;
+  border: 1px solid var(--fh-border);
+  background: rgba(10, 10, 11, 0.5);
+  color: var(--fh-text);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  min-height: 36px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.recentChip:hover {
+  border-color: rgba(232, 213, 181, 0.4);
+  background: rgba(232, 213, 181, 0.1);
+}
+
+.recentChipActive {
+  border-color: var(--fh-accent);
+  background: rgba(201, 168, 108, 0.16);
+}
+
+@media (max-width: 800px) {
+  .recentRow {
+    padding: 0.65rem 0.75rem 0.1rem;
+  }
+  .recentChip,
+  .recentChipActive {
+    min-height: 44px;
+  }
+}

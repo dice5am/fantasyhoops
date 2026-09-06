@@ -2,10 +2,15 @@ import type { SeasonTypeScope } from "@/types/season_player_averages";
 import { DEFAULT_SCOPE, DEFAULT_SEASON } from "@/lib/loadMart";
 import { SEASON_OPTIONS } from "@/types/season_player_averages";
 
+/**
+ * UI-facing scope parse: reg_plus_playoffs falls back to reg_only.
+ * No reg_plus_playoffs in product chrome (Hybrid A1+A3 lock).
+ */
 export function parseScope(v: string | null | undefined): SeasonTypeScope {
-  if (v === "reg_plus_playoffs") return "reg_plus_playoffs";
   if (v === "playoff_only") return "playoff_only";
   if (v === "reg_only") return "reg_only";
+  // Legacy URL / deep-link: map away from UI
+  if (v === "reg_plus_playoffs") return "reg_only";
   return DEFAULT_SCOPE;
 }
 

@@ -1,13 +1,16 @@
 import { readFileSync, statSync } from "fs";
+import path from "path";
 import { parquetReadObjects } from "hyparquet";
 import type {
   PlayerGameLog,
   SeasonTypeScope,
 } from "@/types/season_player_averages";
+import { isTeamAbbr, primaryTeamForSeason } from "@/lib/teamColors";
 
-import path from "path";
-
-const DEFAULT_LOGS = path.join(process.cwd(), "data/curated/player_game_logs.parquet");
+const DEFAULT_LOGS = path.join(
+  process.cwd(),
+  "data/curated/player_game_logs.parquet"
+);
 
 export type { PlayerGameLog };
 
@@ -18,7 +21,11 @@ let logsCache: {
 } | null = null;
 
 function logsPath(): string {
-  return process.env.NBA_CURATED_PATH || process.env.NBA_GAME_LOGS_PATH || DEFAULT_LOGS;
+  return (
+    process.env.NBA_CURATED_PATH ||
+    process.env.NBA_GAME_LOGS_PATH ||
+    DEFAULT_LOGS
+  );
 }
 
 function toNumber(v: unknown): number {
@@ -141,6 +148,34 @@ export async function getPlayerGameLogs(
     return a.game_date.localeCompare(b.game_date);
   });
   return rows;
+}
+
+/**
+ * Map player_id → primary team_abbreviation for a season+scope
+ * (most GP among min>0 games; ties → lex first). Used for Home leader colors.
+ */
+export async function getPrimaryTeamMap(params: {
+  season: string;
+  season_type_scope?: SeasonTypeScope;
+}): Promise<Map<string, string>> {
+  const scope = params.season_type_scope ?? "reg_only";
+  const types = seasonTypesForScope(scope);
+  const all = await loadAllLogs();
+  const byPlayer = new Map<string, PlayerGameLog[]>();
+  for (const g of all) {
+    if (g.season !== params.season) continue;
+    if (types && !types.includes(g.season_type)) continue;
+    if (!(g.min > 0)) continue;
+    const list = byPlayer.get(g.player_id);
+    if (list) list.push(g);
+    else byPlayer.set(g.player_id, [g]);
+  }
+  const out = new Map<string, string>();
+  for (const [pid, games] of byPlayer) {
+    const abbr = primaryTeamForSeason(games, params.season);
+    if (abbr && isTeamAbbr(abbr)) out.set(pid, abbr);
+  }
+  return out;
 }
 
 export { logsPath };

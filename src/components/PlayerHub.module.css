@@ -1,0 +1,76 @@
+.hub {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.explorerIdle,
+.explorerOpen {
+  scroll-margin-top: 0.5rem;
+}
+
+.explorerIdle :global(.wrap) {
+  padding-top: 0.5rem;
+}
+
+.fallback {
+  padding: 1.5rem;
+  color: var(--fh-text-muted);
+}
+
+@media (max-width: 800px) {
+  .hub {
+    gap: 0.15rem;
+  }
+}
+
+.recentRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 0;
+}
+
+.recentLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fh-text-dim);
+}
+
+.recentChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.recentChip {
+  appearance: none;
+  border: 1px solid rgba(212, 184, 150, 0.28);
+  background: rgba(22, 22, 24, 0.55);
+  color: var(--fh-text);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.recentChip:hover {
+  border-color: rgba(212, 184, 150, 0.55);
+  background: rgba(212, 184, 150, 0.12);
+}
+
+@media (max-width: 800px) {
+  .recentRow {
+    padding: 0.65rem 0.75rem 0;
+  }
+  .recentChip {
+    min-height: 44px;
+  }
+}

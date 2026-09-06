@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CartesianGrid,
@@ -47,6 +47,12 @@ import {
   primaryTeamRecent,
   seasonTeamStrokeColors,
 } from "@/lib/teamColors";
+import {
+  STAT_OPTIONS,
+  RADAR_NORM_NOTE,
+  normalizeRadarValue,
+  type RadarStatKey,
+} from "@/lib/radar";
 
 type PlayerHit = { player_id: string; full_name: string };
 
@@ -71,49 +77,9 @@ type GameRow = {
   team_abbreviation: string;
 };
 
-type StatKey =
-  | "pts"
-  | "ast"
-  | "fg3m"
-  | "reb"
-  | "stl"
-  | "blk"
-  | "fg_pct"
-  | "ft_pct"
-  | "tov";
-
-const STAT_OPTIONS: { key: StatKey; label: string; pct?: boolean }[] = [
-  { key: "pts", label: "PTS" },
-  { key: "ast", label: "AST" },
-  { key: "fg3m", label: "3PM" },
-  { key: "reb", label: "REB" },
-  { key: "stl", label: "STL" },
-  { key: "blk", label: "BLK" },
-  { key: "fg_pct", label: "FG%", pct: true },
-  { key: "ft_pct", label: "FT%", pct: true },
-  { key: "tov", label: "TOV" },
-];
+type StatKey = RadarStatKey;
 
 /** Season strokes: team chartPrimary + brightness-by-recency (see teamColors). */
-
-/** Fixed fantasy ranges for radar (0–100 display). TOV is inverted. */
-const RADAR_RANGES: Record<
-  StatKey,
-  { min: number; max: number; invert?: boolean; pct?: boolean }
-> = {
-  pts: { min: 0, max: 35 },
-  ast: { min: 0, max: 12 },
-  fg3m: { min: 0, max: 5 },
-  reb: { min: 0, max: 14 },
-  stl: { min: 0, max: 2.5 },
-  blk: { min: 0, max: 2.5 },
-  fg_pct: { min: 0.4, max: 0.6, pct: true },
-  ft_pct: { min: 0.65, max: 0.95, pct: true },
-  tov: { min: 0, max: 5, invert: true },
-};
-
-const RADAR_NORM_NOTE =
-  "Radar normalization: each spoke is scaled to a fixed fantasy range (not league %ile) — PTS 0–35, AST 0–12, 3PM 0–5, REB 0–14, STL/BLK 0–2.5, FG% 40–60, FT% 65–95, TOV 0–5 inverted (lower TOV → larger spoke). 3PM uses mart avg_fg3m only.";
 
 const SEARCH_MIN_LEN = 2;
 const SEARCH_DEBOUNCE_MS = 220;
@@ -154,23 +120,6 @@ function gameStat(g: GameRow, key: StatKey): number | null {
     return v * 100;
   }
   return g[key];
-}
-
-function clamp01(n: number): number {
-  if (Number.isNaN(n)) return 0;
-  return Math.max(0, Math.min(100, n));
-}
-
-/** Map raw mart average → 0–100 radar score for one category. */
-function normalizeRadarValue(
-  key: StatKey,
-  raw: number | null | undefined
-): number | null {
-  if (raw == null || Number.isNaN(Number(raw))) return null;
-  const { min, max, invert } = RADAR_RANGES[key];
-  const t = (Number(raw) - min) / (max - min);
-  const scored = invert ? 1 - t : t;
-  return clamp01(scored * 100);
 }
 
 function avgForStat(
@@ -221,7 +170,7 @@ function ChartSkeleton({ label }: { label: string }) {
   );
 }
 
-function PlayerExplorerInner() {
+function PlayerExplorerInner({ hideRecent = false, averagesTable }: { hideRecent?: boolean; averagesTable?: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -839,7 +788,7 @@ function PlayerExplorerInner() {
         </div>
       </header>
 
-      {recent.length > 0 && (
+      {!hideRecent && recent.length > 0 && (
         <div className={styles.recentRow} aria-label="Recent players">
           <span className={styles.recentLabel}>Recent</span>
           <div className={styles.recentChips}>
@@ -871,6 +820,10 @@ function PlayerExplorerInner() {
           </div>
         </div>
       )}
+
+      {averagesTable ? (
+        <div className={styles.averagesSlot}>{averagesTable}</div>
+      ) : null}
 
       {!selected ? (
         <div className={styles.panel}>
@@ -1264,7 +1217,13 @@ function PlayerExplorerInner() {
   );
 }
 
-export function PlayerExplorer() {
+export function PlayerExplorer({
+  hideRecent = false,
+  averagesTable,
+}: {
+  hideRecent?: boolean;
+  averagesTable?: ReactNode;
+} = {}) {
   return (
     <Suspense
       fallback={
@@ -1275,7 +1234,10 @@ export function PlayerExplorer() {
         </div>
       }
     >
-      <PlayerExplorerInner />
+      <PlayerExplorerInner
+        hideRecent={hideRecent}
+        averagesTable={averagesTable}
+      />
     </Suspense>
   );
 }

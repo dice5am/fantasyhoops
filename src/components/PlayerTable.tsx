@@ -28,9 +28,22 @@ type Props = {
   rows: SeasonPlayerAverage[];
   scope: SeasonTypeScope;
   season: string;
+  /** Compact mode for Player tab (tighter name col, quieter chrome). */
+  compact?: boolean;
+  /** Where season/scope filters navigate. Default /player. */
+  filterBasePath?: "/" | "/player";
+  /** When true, selecting a row only updates ?player_id= on current path. */
+  selectInPlace?: boolean;
 };
 
-export function PlayerTable({ rows, scope, season }: Props) {
+export function PlayerTable({
+  rows,
+  scope,
+  season,
+  compact = false,
+  filterBasePath = "/player",
+  selectInPlace = false,
+}: Props) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([
     { id: "avg_pts", desc: true },
@@ -58,13 +71,17 @@ export function PlayerTable({ rows, scope, season }: Props) {
                 onClick={(e) => e.stopPropagation()}
               >
                 {info.getValue<string>()}
-              <span className={styles.rowHint} aria-hidden>
-                → profile
-              </span>
-            </Link>
-              <span className={styles.openHint} aria-hidden>
-                Open profile →
-              </span>
+                {!compact ? (
+                  <span className={styles.rowHint} aria-hidden>
+                    → profile
+                  </span>
+                ) : null}
+              </Link>
+              {!compact ? (
+                <span className={styles.openHint} aria-hidden>
+                  Open profile →
+                </span>
+              ) : null}
             </span>
           );
         },
@@ -149,7 +166,7 @@ export function PlayerTable({ rows, scope, season }: Props) {
         },
       },
     ],
-    []
+    [compact]
   );
 
   const table = useReactTable({
@@ -164,8 +181,9 @@ export function PlayerTable({ rows, scope, season }: Props) {
   function navigate(nextSeason: string, nextScope: SeasonTypeScope) {
     const params = new URLSearchParams();
     params.set("season", nextSeason);
-    params.set("scope", nextScope);
-    router.push(`/?${params.toString()}`);
+    const s = nextScope === "reg_plus_playoffs" ? "reg_only" : nextScope;
+    params.set("scope", s);
+    router.push(`${filterBasePath}?${params.toString()}`);
   }
 
   function setSeason(next: SeasonId) {
@@ -180,6 +198,14 @@ export function PlayerTable({ rows, scope, season }: Props) {
     const params = new URLSearchParams();
     params.set("player_id", String(row.player_id));
     if (row.full_name) params.set("name", row.full_name);
+    if (selectInPlace) {
+      // Preserve season/scope on player hub
+      params.set("season", season);
+      const s = scope === "reg_plus_playoffs" ? "reg_only" : scope;
+      params.set("scope", s);
+      router.push(`/player?${params.toString()}`);
+      return;
+    }
     router.push(`/player?${params.toString()}`);
   }
 
@@ -187,15 +213,25 @@ export function PlayerTable({ rows, scope, season }: Props) {
   const emptySearch = !emptyMart && filtered.length === 0;
 
   return (
-    <div className={styles.wrap}>
-      <div className={styles.glowOrange} aria-hidden />
-      <div className={styles.glowCyan} aria-hidden />
-      <div className={styles.glowMagenta} aria-hidden />
+    <div className={`${styles.wrap}${compact ? ` ${styles.compact}` : ""}`}>
+      {!compact ? (
+        <>
+          <div className={styles.glowOrange} aria-hidden />
+          <div className={styles.glowCyan} aria-hidden />
+          <div className={styles.glowMagenta} aria-hidden />
+        </>
+      ) : null}
 
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>NBA Fantasy — Data</h1>
-          <p className={styles.subtitle}>Season averages · live mart</p>
+          <h1 className={styles.title}>
+            {compact ? "Season averages" : "Player averages"}
+          </h1>
+          <p className={styles.subtitle}>
+            {compact
+              ? "Select a row to open explorer below"
+              : "Season averages · live mart"}
+          </p>
         </div>
         <div className={styles.controls}>
           <div className={styles.seg} role="group" aria-label="Season">
@@ -247,8 +283,7 @@ export function PlayerTable({ rows, scope, season }: Props) {
             <p className={styles.emptyBody}>
               Season <code>{season}</code> with scope <code>{scope}</code> is
               not in the mart yet. Try <code>2025-26</code> +{" "}
-              <code>reg_only</code> (or <code>reg_plus_playoffs</code>) until
-              Data backfills prior seasons and <code>playoff_only</code>.
+              <code>reg_only</code>.
             </p>
           </div>
         ) : emptySearch ? (

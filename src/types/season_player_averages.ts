@@ -6,6 +6,8 @@
  *
  * Phase 2: season_type_scope includes playoff_only (Playoffs only, NO Play-In — lock A).
  * Phase 3: Player charts + 9-cat; mart avg_fg3m only (no sum_fg3m/gp fallback).
+ * Hybrid A1+A3: UI SCOPE_OPTIONS = reg_only + playoff_only only;
+ *   parsers map reg_plus_playoffs → reg_only (mart may still contain the scope).
  * Mart may lag behind UI options; missing season/scope → empty rows, no crash.
  */
 
@@ -19,12 +21,15 @@ export type SeasonId = "2023-24" | "2024-25" | "2025-26";
 
 export const SEASON_OPTIONS: SeasonId[] = ["2023-24", "2024-25", "2025-26"];
 
+/**
+ * UI scope options only — no reg_plus_playoffs in the product chrome.
+ * Mart may still store reg_plus_playoffs; parsers fall back to reg_only.
+ */
 export const SCOPE_OPTIONS: {
-  value: SeasonTypeScope;
+  value: "reg_only" | "playoff_only";
   label: string;
 }[] = [
   { value: "reg_only", label: "Regular only" },
-  { value: "reg_plus_playoffs", label: "Reg + Playoffs" },
   { value: "playoff_only", label: "Playoffs only" },
 ];
 
@@ -59,6 +64,11 @@ export interface SeasonPlayerAverage {
   avg_fg3m: number;
   /** Optional audit sum; ignored for 3PM display. */
   sum_fg3m?: number | null;
+  /** Makes for league FG%/FT% (Σ sum_fgm / Σ sum_fga). */
+  sum_fgm?: number | null;
+  sum_fga?: number | null;
+  sum_ftm?: number | null;
+  sum_fta?: number | null;
   /**
    * LOCKED: shooting percentages are 0–1 floats (e.g. 0.462 = 46.2%).
    * UI multiplies by 100 for display; 1 decimal on displayed %.

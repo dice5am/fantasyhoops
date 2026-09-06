@@ -27,7 +27,7 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--fh-text);
-  text-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
+  text-shadow: 0 0 18px rgba(201, 168, 108, 0.28);
   white-space: nowrap;
 }
 
@@ -37,11 +37,11 @@
   max-width: 100%;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(8, 10, 18, 0.55);
+  border: 1px solid var(--fh-border);
+  background: rgba(10, 10, 11, 0.55);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 0 1px rgba(232, 213, 181, 0.08);
 }
 
 .tab,
@@ -54,7 +54,7 @@
   min-width: 44px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--fh-text-muted);
   touch-action: manipulation;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -63,22 +63,22 @@
 .tab + .tabActive,
 .tabActive + .tab,
 .tabActive + .tabActive {
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .tab:hover {
   color: #fff;
-  background: rgba(56, 189, 248, 0.15);
+  background: rgba(232, 213, 181, 0.12);
 }
 
 .tabActive {
   background: linear-gradient(
     135deg,
-    rgba(56, 189, 248, 0.9),
-    rgba(29, 78, 216, 0.8)
+    rgba(201, 168, 108, 0.92),
+    rgba(161, 128, 72, 0.82)
   );
-  color: #fff;
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+  color: #0a0a0b;
+  box-shadow: 0 0 14px rgba(201, 168, 108, 0.35);
 }
 
 @media (max-width: 480px) {

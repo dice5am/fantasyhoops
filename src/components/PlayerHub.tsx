@@ -1,0 +1,39 @@
+"use client";
+
+import { PlayerExplorer } from "@/components/PlayerExplorer";
+import { PlayerTable } from "@/components/PlayerTable";
+import type {
+  SeasonPlayerAverage,
+  SeasonTypeScope,
+} from "@/types/season_player_averages";
+import styles from "./PlayerHub.module.css";
+
+type Props = {
+  rows: SeasonPlayerAverage[];
+  season: string;
+  scope: SeasonTypeScope;
+  hasPlayer: boolean;
+};
+
+/**
+ * Player tab IA: Recent → Season averages → Explorer charts
+ * (Recent + table slotted into PlayerExplorer; one glass chrome).
+ */
+export function PlayerHub({ rows, season, scope, hasPlayer }: Props) {
+  const averagesTable = (
+    <PlayerTable
+      rows={rows}
+      season={season}
+      scope={scope}
+      compact
+      filterBasePath="/player"
+      selectInPlace
+    />
+  );
+
+  return (
+    <div className={hasPlayer ? styles.hubOpen : styles.hub}>
+      <PlayerExplorer averagesTable={averagesTable} />
+    </div>
+  );
+}

@@ -17,9 +17,10 @@ const FORBIDDEN_FALLBACK_KEYS = [
 ] as const;
 
 function parseScope(v: string | null): SeasonTypeScope {
-  if (v === "reg_plus_playoffs") return "reg_plus_playoffs";
+  // Hybrid A1+A3: reg_plus_playoffs falls back to reg_only (no UI option).
   if (v === "playoff_only") return "playoff_only";
   if (v === "reg_only") return "reg_only";
+  if (v === "reg_plus_playoffs") return "reg_only";
   return DEFAULT_SCOPE;
 }
 

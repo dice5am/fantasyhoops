@@ -24,12 +24,6 @@ const STAT_KEYS = new Set<ChartStatKey>([
   "tov",
 ]);
 
-const SCOPES = new Set<SeasonTypeScope>([
-  "reg_only",
-  "reg_plus_playoffs",
-  "playoff_only",
-]);
-
 const SEASON_SET = new Set<string>(SEASON_OPTIONS);
 
 export function parseSeasonsParam(raw: string | null): SeasonId[] | null {
@@ -46,11 +40,13 @@ export function parseSeasonsParam(raw: string | null): SeasonId[] | null {
   return uniq.length ? uniq : null;
 }
 
+/** reg_plus_playoffs → reg_only (UI lock). */
 export function parseScopeParam(raw: string | null): SeasonTypeScope | null {
   if (!raw) return null;
-  return SCOPES.has(raw as SeasonTypeScope)
-    ? (raw as SeasonTypeScope)
-    : null;
+  if (raw === "playoff_only") return "playoff_only";
+  if (raw === "reg_only") return "reg_only";
+  if (raw === "reg_plus_playoffs") return "reg_only";
+  return null;
 }
 
 export function parseStatParam(raw: string | null): ChartStatKey | null {
@@ -69,7 +65,10 @@ export function buildPlayerUrl(opts: {
   if (opts.player_id) params.set("player_id", String(opts.player_id));
   if (opts.name && opts.name !== "…") params.set("name", opts.name);
   params.set("seasons", opts.seasons.join(","));
-  params.set("scope", opts.scope);
+  // Never write reg_plus_playoffs into the URL
+  const scope =
+    opts.scope === "reg_plus_playoffs" ? "reg_only" : opts.scope;
+  params.set("scope", scope);
   params.set("stat", opts.stat);
   const q = params.toString();
   return q ? `/player?${q}` : "/player";

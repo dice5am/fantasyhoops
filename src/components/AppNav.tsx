@@ -5,8 +5,12 @@ import { usePathname } from "next/navigation";
 import styles from "./AppNav.module.css";
 
 const TABS = [
-  { href: "/", label: "Data", match: (p: string) => p === "/" || p.startsWith("/data") },
-  { href: "/player", label: "Player", match: (p: string) => p.startsWith("/player") },
+  { href: "/", label: "Home", match: (p: string) => p === "/" },
+  {
+    href: "/player",
+    label: "Player",
+    match: (p: string) => p.startsWith("/player"),
+  },
 ] as const;
 
 export function AppNav() {
