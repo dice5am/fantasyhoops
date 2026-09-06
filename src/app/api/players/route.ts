@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   DEFAULT_SCOPE,
   DEFAULT_SEASON,
-  getPlayerDirectory,
-  getSeasonPlayerAverages,
+  getPlayerDirectoryTop250,
+  getSeasonPlayerAveragesTop250,
 } from "@/lib/loadMart";
 import { nameMatches } from "@/lib/normalize";
 import { parseScope } from "@/lib/scope";
@@ -16,24 +16,34 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q") ?? "";
 
   try {
-    // Phase 3: distinct player directory for search/select (unicode-aware)
+    const season = searchParams.get("season") || DEFAULT_SEASON;
+    const season_type_scope = parseScope(
+      searchParams.get("season_type_scope") ?? searchParams.get("scope")
+    );
+
+    // Directory / typeahead: Top-250 pool for season+scope (default 2025-26 reg_only)
     if (directory === "1" || directory === "true") {
-      let players = await getPlayerDirectory();
+      let players = await getPlayerDirectoryTop250({
+        season,
+        season_type_scope,
+      });
       if (q.trim()) {
         players = players.filter((p) => nameMatches(p.full_name, q));
       }
       return NextResponse.json({
         count: players.length,
         players,
+        season,
+        season_type_scope,
+        pool: "top250",
       });
     }
 
-    const season = searchParams.get("season") || DEFAULT_SEASON;
-    const season_type_scope = parseScope(
-      searchParams.get("season_type_scope") ?? searchParams.get("scope")
-    );
-
-    const rows = await getSeasonPlayerAverages({ season, season_type_scope });
+    // Averages list: Top-250 for season+scope (full mart still available via player-averages)
+    const rows = await getSeasonPlayerAveragesTop250({
+      season,
+      season_type_scope,
+    });
     const filtered = q.trim()
       ? rows.filter((r) => nameMatches(r.full_name, q))
       : rows;
@@ -43,6 +53,7 @@ export async function GET(req: NextRequest) {
       season_type_scope,
       count: filtered.length,
       rows: filtered,
+      pool: "top250",
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

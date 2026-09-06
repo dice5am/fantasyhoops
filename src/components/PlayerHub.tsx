@@ -13,13 +13,21 @@ type Props = {
   season: string;
   scope: SeasonTypeScope;
   hasPlayer: boolean;
+  /** Soft note when deep-linked player is outside Top-250 pool. */
+  outsideTop250?: boolean;
 };
 
 /**
  * Player tab IA: Recent → Season averages → Explorer charts
  * (Recent + table slotted into PlayerExplorer; one glass chrome).
  */
-export function PlayerHub({ rows, season, scope, hasPlayer }: Props) {
+export function PlayerHub({
+  rows,
+  season,
+  scope,
+  hasPlayer,
+  outsideTop250 = false,
+}: Props) {
   const averagesTable = (
     <PlayerTable
       rows={rows}
@@ -33,7 +41,10 @@ export function PlayerHub({ rows, season, scope, hasPlayer }: Props) {
 
   return (
     <div className={hasPlayer ? styles.hubOpen : styles.hub}>
-      <PlayerExplorer averagesTable={averagesTable} />
+      <PlayerExplorer
+        averagesTable={averagesTable}
+        outsideTop250={outsideTop250}
+      />
     </div>
   );
 }

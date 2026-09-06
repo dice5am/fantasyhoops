@@ -1,5 +1,8 @@
 import { PlayerHub } from "@/components/PlayerHub";
-import { getSeasonPlayerAverages } from "@/lib/loadMart";
+import {
+  getSeasonPlayerAveragesTop250,
+  isInTop250Pool,
+} from "@/lib/loadMart";
 import { parseScope, parseSeason } from "@/lib/scope";
 
 export const runtime = "nodejs";
@@ -22,11 +25,22 @@ export default async function PlayerPage({
   const sp = await searchParams;
   const season = parseSeason(sp.season);
   const scope = parseScope(sp.scope);
-  const rows = await getSeasonPlayerAverages({
+  // Averages list: Top-250 pool only. Deep-link explorer still loads any player via APIs.
+  const rows = await getSeasonPlayerAveragesTop250({
     season,
     season_type_scope: scope,
   });
-  const hasPlayer = Boolean(sp.player_id && String(sp.player_id).length > 0);
+  const playerId = sp.player_id ? String(sp.player_id) : "";
+  const hasPlayer = Boolean(playerId.length > 0);
+
+  let outsideTop250 = false;
+  if (hasPlayer) {
+    outsideTop250 = !(await isInTop250Pool({
+      player_id: playerId,
+      season,
+      season_type_scope: scope,
+    }));
+  }
 
   return (
     <PlayerHub
@@ -34,6 +48,7 @@ export default async function PlayerPage({
       season={season}
       scope={scope}
       hasPlayer={hasPlayer}
+      outsideTop250={outsideTop250}
     />
   );
 }

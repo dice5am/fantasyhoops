@@ -309,7 +309,7 @@ export type LeagueContextPayload = {
 
 /**
  * Build full Home league context from mart rows + optional team map.
- * Caller should Universe-filter rows first (filterByUniverse).
+ * Caller should Top-250 then Universe-filter rows first (selectTop250ByMpg → filterByUniverse).
  */
 export function buildLeagueContext(
   rows: SeasonPlayerAverage[],

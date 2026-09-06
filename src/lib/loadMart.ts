@@ -16,6 +16,7 @@ import {
 } from "@/lib/leagueAggregates";
 import { getPrimaryTeamMap } from "@/lib/loadGameLogs";
 import { filterByUniverse, parseUniverse, type UniverseId } from "@/lib/universe";
+import { selectTop250ByMpg, top250IdSet } from "@/lib/top250";
 
 import path from "path";
 
@@ -61,8 +62,6 @@ function toNullableNumber(v: unknown): number | null {
 }
 
 function mapRow(raw: Record<string, unknown>): SeasonPlayerAverage {
-  // Keep raw avg_fg3m / sum_fg3m separate; API resolves display 3PM + guard.
-  // 3PM display = avg_fg3m only — NEVER sum_fg3m/gp.
   const avgFg3m =
     "avg_fg3m" in raw ? toNullableNumber(raw.avg_fg3m) : null;
   const sumFg3m =
@@ -125,11 +124,7 @@ async function loadAllMartRows(): Promise<SeasonPlayerAverage[]> {
   return rows;
 }
 
-/**
- * Server-side read of the live parquet mart (hyparquet).
- * Filters by season + season_type_scope (+ optional player_id).
- * Missing combo → [] (no crash).
- */
+/** Full mart read — no Top-250 trim (deep-link / player-averages / game logs). */
 export async function getSeasonPlayerAverages(
   params: GetSeasonPlayerAveragesParams = {}
 ): Promise<SeasonPlayerAverage[]> {
@@ -149,7 +144,17 @@ export async function getSeasonPlayerAverages(
   return rows;
 }
 
-/** Unique players from mart for unicode search/select. */
+/** Season+scope averages restricted to Top-250-by-MPG pool. */
+export async function getSeasonPlayerAveragesTop250(
+  params: GetSeasonPlayerAveragesParams = {}
+): Promise<SeasonPlayerAverage[]> {
+  const rows = await getSeasonPlayerAverages({
+    season: params.season,
+    season_type_scope: params.season_type_scope,
+  });
+  return selectTop250ByMpg(rows);
+}
+
 export async function getPlayerDirectory(): Promise<PlayerDirectoryEntry[]> {
   const all = await loadAllMartRows();
   const map = new Map<string, string>();
@@ -164,12 +169,40 @@ export async function getPlayerDirectory(): Promise<PlayerDirectoryEntry[]> {
   return entries;
 }
 
+/** Directory restricted to Top-250 pool for season+scope (typeahead / search). */
+export async function getPlayerDirectoryTop250(params?: {
+  season?: string;
+  season_type_scope?: SeasonTypeScope;
+}): Promise<PlayerDirectoryEntry[]> {
+  const top = await getSeasonPlayerAveragesTop250({
+    season: params?.season ?? DEFAULT_SEASON,
+    season_type_scope: params?.season_type_scope ?? DEFAULT_SCOPE,
+  });
+  const entries = top.map((r) => ({
+    player_id: r.player_id,
+    full_name: r.full_name,
+  }));
+  entries.sort((a, b) => a.full_name.localeCompare(b.full_name, "en"));
+  return entries;
+}
+
+export async function isInTop250Pool(params: {
+  player_id: string;
+  season?: string;
+  season_type_scope?: SeasonTypeScope;
+}): Promise<boolean> {
+  const rows = await getSeasonPlayerAverages({
+    season: params.season ?? DEFAULT_SEASON,
+    season_type_scope: params.season_type_scope ?? DEFAULT_SCOPE,
+  });
+  return top250IdSet(rows).has(String(params.player_id));
+}
+
 export type { LeaderEntry, LeagueAvgs, FgPctHistBin, LeagueContextPayload };
 export type LeagueContext = LeagueContextPayload;
 
 /**
- * GP-weighted league averages + top-5 leaders + FG% hist + stocks leaders.
- * Accurate formulas live in leagueAggregates.ts.
+ * Pipeline: season+scope mart → Top 250 by MPG → Universe filter → aggregates.
  */
 export async function getLeagueContext(params: {
   season?: string;
@@ -186,7 +219,8 @@ export async function getLeagueContext(params: {
     typeof params.universe === "string" ? params.universe : undefined
   );
   const rows = await getSeasonPlayerAverages({ season, season_type_scope });
-  const filtered = filterByUniverse(rows, universe);
+  const top250 = selectTop250ByMpg(rows);
+  const filtered = filterByUniverse(top250, universe);
   const teamByPlayer =
     params.teamByPlayer ??
     (await getPrimaryTeamMap({ season, season_type_scope }));

@@ -170,7 +170,7 @@ function ChartSkeleton({ label }: { label: string }) {
   );
 }
 
-function PlayerExplorerInner({ hideRecent = false, averagesTable }: { hideRecent?: boolean; averagesTable?: ReactNode }) {
+function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 = false }: { hideRecent?: boolean; averagesTable?: ReactNode; outsideTop250?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -833,6 +833,11 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable }: { hideRecent
         </div>
       ) : (
         <>
+          {outsideTop250 ? (
+            <p className={styles.outsidePoolNote} role="note">
+              Outside active top-250 pool
+            </p>
+          ) : null}
           {/* 1) Line chart — X = game_num */}
           <section className={styles.panel} aria-label="Game chart">
             <h2 className={styles.panelTitle}>
@@ -1220,9 +1225,11 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable }: { hideRecent
 export function PlayerExplorer({
   hideRecent = false,
   averagesTable,
+  outsideTop250 = false,
 }: {
   hideRecent?: boolean;
   averagesTable?: ReactNode;
+  outsideTop250?: boolean;
 } = {}) {
   return (
     <Suspense
@@ -1237,6 +1244,7 @@ export function PlayerExplorer({
       <PlayerExplorerInner
         hideRecent={hideRecent}
         averagesTable={averagesTable}
+        outsideTop250={outsideTop250}
       />
     </Suspense>
   );

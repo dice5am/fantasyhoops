@@ -83,6 +83,17 @@
   font-size: 0.9rem;
 }
 
+.outsidePoolNote {
+  margin: 0 0 0.75rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  color: var(--fh-champagne, #d4b896);
+  background: rgba(18, 18, 20, 0.55);
+  border: 1px solid rgba(201, 168, 108, 0.28);
+  border-radius: 10px;
+}
+
+
 .controls {
   position: relative;
   overflow: visible;
