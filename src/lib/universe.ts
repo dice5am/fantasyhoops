@@ -1,13 +1,13 @@
 /**
  * Home Universe presets (SCOPE CHANGE — Hybrid A1+A3).
- * Server-side filter on mart rows via avg_min. Default: all (no Home UI this BUILD; API param reserved).
+ * Server-side filter on mart rows via avg_min. Default: min20. Home Universe segmented control ships in this BUILD.
  */
 
 import type { SeasonPlayerAverage } from "@/types/season_player_averages";
 
 export type UniverseId = "all" | "min20" | "top10min";
 
-export const DEFAULT_UNIVERSE: UniverseId = "all";
+export const DEFAULT_UNIVERSE: UniverseId = "min20";
 
 export const UNIVERSE_OPTIONS: {
   value: UniverseId;
