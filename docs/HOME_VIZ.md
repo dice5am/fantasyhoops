@@ -33,6 +33,14 @@ Documented at ship time (re-run via `/api/league-context`):
 | `min20` | **290** |
 | `top10min` | **59** |
 
+For `universe=all` · 2025-26 · `reg_only`:
+
+| Metric | Value |
+|--------|-------|
+| League PTS (GP-weighted) | **≈ 10.67** |
+| League FG% (Σ fgm / Σ fga) | **≈ 0.471 (47.1%)** |
+| Σ gp | 26,649 |
+
 ## Aggregate formulas
 
 Accurate calcs live in `src/lib/leagueAggregates.ts`.
