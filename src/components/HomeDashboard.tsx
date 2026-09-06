@@ -29,12 +29,14 @@ import {
 } from "@/lib/radar";
 import type { SeasonTypeScope } from "@/types/season_player_averages";
 import { SCOPE_OPTIONS, SEASON_OPTIONS } from "@/types/season_player_averages";
+import { UNIVERSE_OPTIONS, type UniverseId } from "@/lib/universe";
 import styles from "./HomeDashboard.module.css";
 
 type Props = {
   context: LeagueContextPayload;
   season: string;
   scope: SeasonTypeScope;
+  universe: UniverseId;
 };
 
 function fmtStat(key: RadarStatKey, v: number | null | undefined): string {
@@ -112,7 +114,7 @@ function TriptychPanel({
   );
 }
 
-export function HomeDashboard({ context, season, scope }: Props) {
+export function HomeDashboard({ context, season, scope, universe }: Props) {
   const router = useRouter();
 
   const radarData = useMemo(() => {
@@ -128,12 +130,17 @@ export function HomeDashboard({ context, season, scope }: Props) {
     });
   }, [context.league_avgs]);
 
-  function navigate(nextSeason: string, nextScope: SeasonTypeScope) {
+  function navigate(
+    nextSeason: string,
+    nextScope: SeasonTypeScope,
+    nextUniverse: UniverseId = universe
+  ) {
     const params = new URLSearchParams();
     params.set("season", nextSeason);
     // Never write reg_plus_playoffs
     const s = nextScope === "reg_plus_playoffs" ? "reg_only" : nextScope;
     params.set("scope", s);
+    params.set("universe", nextUniverse);
     router.push(`/?${params.toString()}`);
   }
 
@@ -177,12 +184,29 @@ export function HomeDashboard({ context, season, scope }: Props) {
               </button>
             ))}
           </div>
+          <div
+            className={`${styles.seg} ${styles.universeSeg}`}
+            role="group"
+            aria-label="Player universe"
+          >
+            {UNIVERSE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                title={opt.hint}
+                className={universe === opt.value ? styles.active : undefined}
+                onClick={() => navigate(season, uiScope, opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
       <p className={styles.meta}>
         {context.player_count} players · season <code>{season}</code> · scope{" "}
-        <code>{uiScope}</code>
+        <code>{uiScope}</code> · universe <code>{universe}</code>
         {" · "}
         <Link href="/player" className={styles.metaLink}>
           Browse players →

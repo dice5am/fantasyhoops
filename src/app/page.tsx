@@ -20,7 +20,6 @@ export default async function Home({
   const sp = await searchParams;
   const season = parseSeason(sp.season);
   const scope = parseScope(sp.scope);
-  // API/deep-link only this BUILD — no Home universe filter chrome
   const universe = parseUniverse(sp.universe);
   const context = await getLeagueContext({
     season,
@@ -29,6 +28,11 @@ export default async function Home({
   });
 
   return (
-    <HomeDashboard context={context} season={season} scope={scope} />
+    <HomeDashboard
+      context={context}
+      season={season}
+      scope={scope}
+      universe={universe}
+    />
   );
 }
