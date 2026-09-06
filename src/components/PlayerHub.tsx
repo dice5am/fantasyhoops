@@ -20,6 +20,7 @@ type Props = {
 /**
  * Player tab IA: Recent → Season averages → Explorer charts
  * (Recent + table slotted into PlayerExplorer; one glass chrome).
+ * Mobile (≤800): list ↔ detail drill-in via ?player_id=; desktop keeps both.
  */
 export function PlayerHub({
   rows,
@@ -40,7 +41,12 @@ export function PlayerHub({
   );
 
   return (
-    <div className={hasPlayer ? styles.hubOpen : styles.hub}>
+    <div
+      className={`${hasPlayer ? styles.hubOpen : styles.hub} ${
+        hasPlayer ? styles.hubDetail : styles.hubList
+      }`}
+      data-player-view={hasPlayer ? "detail" : "list"}
+    >
       <PlayerExplorer
         averagesTable={averagesTable}
         outsideTop250={outsideTop250}

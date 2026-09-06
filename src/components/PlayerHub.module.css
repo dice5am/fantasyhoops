@@ -100,3 +100,19 @@
     font-size: 0.68rem;
   }
 }
+
+
+/* Mobile list ↔ detail markers (Explorer owns pane swap; hub tags state) */
+.hubList,
+.hubDetail {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 800px) {
+  .hubList,
+  .hubDetail {
+    overflow-x: clip;
+  }
+}

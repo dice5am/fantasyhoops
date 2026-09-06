@@ -231,12 +231,49 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
   /** Hydrate selection from URL so charts load immediately (player_id is SoT). */
   useEffect(() => {
     const playerId = searchParams.get("player_id")?.trim() ?? "";
-    if (!playerId) return;
+    if (!playerId) {
+      setSelected((prev) => (prev ? null : prev));
+      return;
+    }
     if (selected?.player_id === playerId) return;
     const name = searchParams.get("name")?.trim() ?? "";
     setSelected({ player_id: playerId, full_name: name || "…" });
     if (name) setQuery(name);
   }, [searchParams, selected?.player_id]);
+
+  const urlPlayerId = searchParams.get("player_id")?.trim() ?? "";
+  const hasUrlPlayer = Boolean(urlPlayerId);
+
+  /** Mobile drill-in: land at top of detail pane when player_id appears. */
+  useEffect(() => {
+    if (!urlPlayerId) return;
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 800px)").matches) return;
+    window.scrollTo(0, 0);
+  }, [urlPlayerId]);
+
+  const clearPlayerSelection = useCallback(() => {
+    const params = new URLSearchParams(
+      typeof window !== "undefined" ? window.location.search : searchParams.toString()
+    );
+    params.delete("player_id");
+    params.delete("name");
+    const q = params.toString();
+    const href = q ? `/player?${q}` : "/player";
+    urlWriteLock.current = true;
+    window.history.replaceState(window.history.state, "", href);
+    router.replace(href, { scroll: false });
+    setSelected(null);
+    const settle = () => window.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      settle();
+      requestAnimationFrame(settle);
+    });
+    window.setTimeout(() => {
+      urlWriteLock.current = false;
+      settle();
+    }, 0);
+  }, [router, searchParams]);
 
   const writePlayerUrl = useCallback(
     (opts: {
@@ -743,7 +780,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
 
   return (
     <div
-      className={styles.wrap}
+      className={`${styles.wrap} ${hasUrlPlayer ? styles.withPlayer : styles.noPlayer}`}
       style={
         {
           ["--fh-team-accent" as string]: displayTeamAccent,
@@ -754,11 +791,26 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
       <div className={styles.glowCyan} aria-hidden />
       <div className={styles.glowMagenta} aria-hidden />
 
+      <button
+        type="button"
+        className={styles.backLink}
+        onClick={clearPlayerSelection}
+        aria-label="Back to players list"
+      >
+        ← Players
+      </button>
+
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Player Explorer</h1>
+          <h1 className={styles.title}>
+            {hasUrlPlayer && selected?.full_name && selected.full_name !== "…"
+              ? selected.full_name
+              : "Player Explorer"}
+          </h1>
           <p className={styles.subtitle}>
-            Game-by-game · radar · 9-cat · Phase 3
+            {hasUrlPlayer
+              ? "Game-by-game · radar · 9-cat"
+              : "Search · recent · season averages"}
           </p>
         </div>
         <div className={styles.controls}>
@@ -796,43 +848,46 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
         </div>
       </header>
 
-      {!hideRecent && recent.length > 0 && (
-        <div className={styles.recentRow} aria-label="Recent players">
-          <span className={styles.recentLabel}>Recent</span>
-          <div className={styles.recentChips}>
-            {recent.map((p) => (
-              <button
-                key={p.player_id}
-                type="button"
-                className={`${styles.recentChip}${
-                  selected?.player_id === p.player_id
-                    ? ` ${styles.recentChipActive}`
-                    : ""
-                }`}
-                style={
-                  selected?.player_id === p.player_id
-                    ? ({
-                        borderColor: displayTeamAccent,
-                        boxShadow: `0 0 12px ${displayTeamAccent}55`,
-                      } as CSSProperties)
-                    : undefined
-                }
-                onClick={() => pickPlayer(p)}
-              >
-                {p.full_name}
-                {selected?.player_id === p.player_id && displayTeam
-                  ? ` · ${displayTeam}`
-                  : ""}
-              </button>
-            ))}
+      <div className={styles.listChrome}>
+        {!hideRecent && recent.length > 0 && (
+          <div className={styles.recentRow} aria-label="Recent players">
+            <span className={styles.recentLabel}>Recent</span>
+            <div className={styles.recentChips}>
+              {recent.map((p) => (
+                <button
+                  key={p.player_id}
+                  type="button"
+                  className={`${styles.recentChip}${
+                    selected?.player_id === p.player_id
+                      ? ` ${styles.recentChipActive}`
+                      : ""
+                  }`}
+                  style={
+                    selected?.player_id === p.player_id
+                      ? ({
+                          borderColor: displayTeamAccent,
+                          boxShadow: `0 0 12px ${displayTeamAccent}55`,
+                        } as CSSProperties)
+                      : undefined
+                  }
+                  onClick={() => pickPlayer(p)}
+                >
+                  {p.full_name}
+                  {selected?.player_id === p.player_id && displayTeam
+                    ? ` · ${displayTeam}`
+                    : ""}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {averagesTable ? (
-        <div className={styles.averagesSlot}>{averagesTable}</div>
-      ) : null}
+        {averagesTable ? (
+          <div className={styles.averagesSlot}>{averagesTable}</div>
+        ) : null}
+      </div>
 
+      <div className={styles.detailChrome}>
       {!selected ? (
         <div className={styles.panel}>
           <p className={styles.empty}>
@@ -1226,6 +1281,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
           </section>
         </>
       )}
+      </div>
     </div>
   );
 }

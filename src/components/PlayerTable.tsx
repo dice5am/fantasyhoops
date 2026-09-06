@@ -228,20 +228,31 @@ export function PlayerTable({
   }
 
   function goToPlayer(row: SeasonPlayerAverage) {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(
+      typeof window !== "undefined" ? window.location.search : ""
+    );
     params.set("player_id", String(row.player_id));
     if (row.full_name) params.set("name", row.full_name);
     if (selectInPlace) {
       params.set("season", season);
       const s = scope === "reg_plus_playoffs" ? "reg_only" : scope;
       params.set("scope", s);
+      const href = `/player?${params.toString()}`;
+      const narrow =
+        typeof window !== "undefined" &&
+        window.matchMedia("(max-width: 800px)").matches;
       const y = window.scrollY;
-      router.replace(`/player?${params.toString()}`, { scroll: false });
-      const restore = () => window.scrollTo(0, y);
-      requestAnimationFrame(() => {
-        restore();
-        requestAnimationFrame(restore);
-      });
+      window.history.replaceState(window.history.state, "", href);
+      router.replace(href, { scroll: false });
+      if (narrow) {
+        requestAnimationFrame(() => window.scrollTo(0, 0));
+      } else {
+        const restore = () => window.scrollTo(0, y);
+        requestAnimationFrame(() => {
+          restore();
+          requestAnimationFrame(restore);
+        });
+      }
       return;
     }
     router.push(`/player?${params.toString()}`);
@@ -267,7 +278,7 @@ export function PlayerTable({
           </h1>
           <p className={styles.subtitle}>
             {compact
-              ? "Select a row to open explorer below"
+              ? "Tap a player to open profile"
               : "Season averages · live mart"}
           </p>
         </div>
