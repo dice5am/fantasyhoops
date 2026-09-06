@@ -240,8 +240,9 @@ export function withRecencyBrightness(
 }
 
 /**
- * Per-season chart/radar/metric stroke: that season's primary team chartPrimary
- * hue + brightness-by-recency (newest brightest). NOT player-hash hue, NOT app neon.
+ * Same-player multi-season: ONE hue from **most recent team** primary, then
+ * brightness-by-recency (newest brightest → older dimmer). Do not recolor each
+ * season by that year's team.
  */
 export function seasonTeamStrokeColors(
   games: { season: string; min: number; team_abbreviation?: string | null }[],
@@ -249,12 +250,14 @@ export function seasonTeamStrokeColors(
 ): Record<string, string> {
   const sorted = [...seasons].sort();
   const n = sorted.length;
+  const abbr =
+    primaryTeamRecent(games) ??
+    (sorted.length ? primaryTeamForSeason(games, sorted[sorted.length - 1]) : null);
+  const token = getTeamColors(abbr);
+  const hex = token?.chartPrimary ?? FALLBACK_CHART_STROKE;
   const out: Record<string, string> = {};
   sorted.forEach((season, idxFromOldest) => {
     const rankFromNewest = n - 1 - idxFromOldest;
-    const abbr = primaryTeamForSeason(games, season);
-    const token = getTeamColors(abbr);
-    const hex = token?.chartPrimary ?? FALLBACK_CHART_STROKE;
     out[season] = withRecencyBrightness(hex, rankFromNewest, n);
   });
   return out;

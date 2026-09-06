@@ -672,48 +672,70 @@ function PlayerExplorerInner() {
       for (const season of chartSeasons) {
         const g = indexed.get(season)?.get(game_num);
         if (!g || !(g.min > 0)) {
-          // DNP / not-reached / missing → null (never 0) on value series
-          row[season] = null;
+          // DNP / not-reached / missing → omit (undefined), never 0 — Recharts null→0 trap
+          row[season] = undefined as unknown as null;
           row[`date_${season}`] = g ? g.game_date : null;
           row[`dnp_${season}`] = g && !(g.min > 0) ? 1 : null;
         } else {
           const v = gameStat(g, stat);
-          row[season] = v == null || Number.isNaN(Number(v)) ? null : v;
+          row[season] =
+            v == null || Number.isNaN(Number(v))
+              ? (undefined as unknown as null)
+              : v;
           row[`date_${season}`] = g.game_date;
         }
       }
       rows.push(row);
     }
-    // Gap path series: hold first/last played value across leading/trailing
-    // nulls so dotted stroke spans the full 1…xMax domain (values stay null).
+    // Gap path: hold-last / hold-first / linear mid-interp — NEVER coerce to 0.
+    // Value series stays null for DNP; gap series is finite for full domain.
     for (const season of chartSeasons) {
       const gapKey = `${season}__gap`;
-      let firstVal: number | null = null;
-      let lastVal: number | null = null;
-      let firstIdx = -1;
-      let lastIdx = -1;
+      const played: { i: number; v: number }[] = [];
       for (let i = 0; i < rows.length; i++) {
         const v = rows[i][season];
-        if (typeof v === "number" && !Number.isNaN(v)) {
-          if (firstIdx < 0) {
-            firstIdx = i;
-            firstVal = v;
-          }
-          lastIdx = i;
-          lastVal = v;
+        if (typeof v === "number" && Number.isFinite(v)) {
+          played.push({ i, v });
         }
       }
+      if (played.length === 0) {
+        for (let i = 0; i < rows.length; i++) {
+          // No played points — leave gap undefined (not 0)
+          delete rows[i][gapKey];
+        }
+        continue;
+      }
+      const first = played[0];
+      const last = played[played.length - 1];
       for (let i = 0; i < rows.length; i++) {
         const v = rows[i][season];
-        if (typeof v === "number" && !Number.isNaN(v)) {
+        if (typeof v === "number" && Number.isFinite(v)) {
           rows[i][gapKey] = v;
-        } else if (firstIdx >= 0 && i < firstIdx && firstVal != null) {
-          rows[i][gapKey] = firstVal;
-        } else if (lastIdx >= 0 && i > lastIdx && lastVal != null) {
-          rows[i][gapKey] = lastVal;
+          continue;
+        }
+        if (i < first.i) {
+          rows[i][gapKey] = first.v; // leading hold — not 0
+          continue;
+        }
+        if (i > last.i) {
+          rows[i][gapKey] = last.v; // trailing hold — not 0
+          continue;
+        }
+        // Mid DNP: linear interpolate between neighboring played points
+        let lo = played[0];
+        let hi = played[played.length - 1];
+        for (let p = 0; p < played.length - 1; p++) {
+          if (played[p].i <= i && played[p + 1].i >= i) {
+            lo = played[p];
+            hi = played[p + 1];
+            break;
+          }
+        }
+        if (hi.i === lo.i) {
+          rows[i][gapKey] = lo.v;
         } else {
-          // mid-gap nulls — connectNulls bridges between played neighbors
-          rows[i][gapKey] = null;
+          const t = (i - lo.i) / (hi.i - lo.i);
+          rows[i][gapKey] = lo.v + (hi.v - lo.v) * t;
         }
       }
     }
@@ -966,7 +988,8 @@ function PlayerExplorerInner() {
                       width={36}
                       stroke="#cbd5e1"
                       tick={{ fill: "#cbd5e1", fontSize: 11 }}
-                      domain={isPct ? [0, 100] : ["auto", "auto"]}
+                      domain={isPct ? [0, 100] : ["dataMin", "dataMax"]}
+                      allowDataOverflow={false}
                       tickFormatter={(v) =>
                         isPct ? `${Number(v).toFixed(0)}` : String(v)
                       }
@@ -1043,6 +1066,7 @@ function PlayerExplorerInner() {
                           dot={{ r: 2, strokeWidth: 0, fill: stroke }}
                           connectNulls={false}
                           isAnimationActive={false}
+                          // null ≠ 0: Recharts must not draw missing games at baseline
                         />,
                       ];
                     })}
