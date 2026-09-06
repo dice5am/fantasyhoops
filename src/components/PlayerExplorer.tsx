@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   CartesianGrid,
   Legend,
@@ -28,6 +29,18 @@ import {
   SEASON_OPTIONS,
 } from "@/types/season_player_averages";
 import styles from "./PlayerExplorer.module.css";
+import {
+  buildPlayerUrl,
+  parseSeasonsParam as parseSeasonsParamRaw,
+  parseScopeParam as parseScopeParamRaw,
+  parseStatParam as parseStatParamRaw,
+  type ChartStatKey,
+} from "@/lib/playerUrl";
+import {
+  pushRecentPlayer as pushRecentPlayerLib,
+  readRecentPlayers,
+  type RecentPlayer,
+} from "@/lib/recentPlayers";
 
 type PlayerHit = { player_id: string; full_name: string };
 
@@ -98,6 +111,38 @@ const RADAR_RANGES: Record<
 const RADAR_NORM_NOTE =
   "Radar normalization: each spoke is scaled to a fixed fantasy range (not league %ile) — PTS 0–35, AST 0–12, 3PM 0–5, REB 0–14, STL/BLK 0–2.5, FG% 40–60, FT% 65–95, TOV 0–5 inverted (lower TOV → larger spoke). 3PM uses mart avg_fg3m only.";
 
+const SEARCH_MIN_LEN = 2;
+const SEARCH_DEBOUNCE_MS = 220;
+
+
+function parseSeasonsParam(raw: string | null): SeasonId[] {
+  return parseSeasonsParamRaw(raw) ?? ["2025-26"];
+}
+
+function parseScopeParam(raw: string | null): SeasonTypeScope {
+  return parseScopeParamRaw(raw) ?? "reg_only";
+}
+
+function parseStatParam(raw: string | null): StatKey {
+  return (parseStatParamRaw(raw) as StatKey | null) ?? "pts";
+}
+
+function seasonsEqual(a: SeasonId[], b: SeasonId[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((s, i) => s === b[i]);
+}
+
+function loadRecentPlayers(): RecentPlayer[] {
+  return readRecentPlayers();
+}
+
+function pushRecentPlayer(player: PlayerHit): RecentPlayer[] {
+  if (!player.player_id || !player.full_name || player.full_name === "…") {
+    return loadRecentPlayers();
+  }
+  return pushRecentPlayerLib(player);
+}
+
 function gameStat(g: GameRow, key: StatKey): number | null {
   if (key === "fg_pct" || key === "ft_pct") {
     const v = g[key];
@@ -160,25 +205,54 @@ type SeasonAvgBundle = {
   avg_fg3m: number | null;
 };
 
-export function PlayerExplorer() {
+function ChartSkeleton({ label }: { label: string }) {
+  return (
+    <div className={styles.skeleton} role="status" aria-busy="true" aria-label={label}>
+      <div className={styles.skeletonBar} />
+      <div className={styles.skeletonBar} style={{ width: "78%" }} />
+      <div className={styles.skeletonBar} style={{ width: "92%" }} />
+      <div className={styles.skeletonChart} />
+      <p className={styles.skeletonLabel}>{label}</p>
+    </div>
+  );
+}
+
+function PlayerExplorerInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<PlayerHit[]>([]);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<PlayerHit | null>(null);
+  const [recent, setRecent] = useState<PlayerHit[]>([]);
 
-  const [chartSeasons, setChartSeasons] = useState<SeasonId[]>(["2025-26"]);
-  const [chartScope, setChartScope] = useState<SeasonTypeScope>("reg_only");
-  const [stat, setStat] = useState<StatKey>("pts");
+  const [chartSeasons, setChartSeasons] = useState<SeasonId[]>(() =>
+    parseSeasonsParam(searchParams.get("seasons"))
+  );
+  const [chartScope, setChartScope] = useState<SeasonTypeScope>(() =>
+    parseScopeParam(searchParams.get("scope"))
+  );
+  const [stat, setStat] = useState<StatKey>(() =>
+    parseStatParam(searchParams.get("stat"))
+  );
 
   const [games, setGames] = useState<GameRow[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
+  const [gamesError, setGamesError] = useState<string | null>(null);
   const [avgBySeason, setAvgBySeason] = useState<
     Partial<Record<SeasonId, SeasonAvgBundle>>
   >({});
   const [avgLoading, setAvgLoading] = useState(false);
+  const [avgError, setAvgError] = useState<string | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const urlWriteLock = useRef(false);
+
+  useEffect(() => {
+    setRecent(loadRecentPlayers());
+  }, []);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -188,20 +262,207 @@ export function PlayerExplorer() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const runSearch = useCallback(async (q: string) => {
-    const res = await fetch(
-      `/api/player-search?q=${encodeURIComponent(q)}`
+  /** Hydrate chart controls from URL (validate; fallback defaults). */
+  useEffect(() => {
+    if (urlWriteLock.current) return;
+    const nextSeasons = parseSeasonsParam(searchParams.get("seasons"));
+    const nextScope = parseScopeParam(searchParams.get("scope"));
+    const nextStat = parseStatParam(searchParams.get("stat"));
+    setChartSeasons((prev) =>
+      seasonsEqual(prev, nextSeasons) ? prev : nextSeasons
     );
-    if (!res.ok) return;
-    const data = await res.json();
-    setHits(data.players ?? []);
+    setChartScope((prev) => (prev === nextScope ? prev : nextScope));
+    setStat((prev) => (prev === nextStat ? prev : nextStat));
+  }, [searchParams]);
+
+  /** Hydrate selection from URL so charts load immediately (player_id is SoT). */
+  useEffect(() => {
+    const playerId = searchParams.get("player_id")?.trim() ?? "";
+    if (!playerId) return;
+    if (selected?.player_id === playerId) return;
+    const name = searchParams.get("name")?.trim() ?? "";
+    setSelected({ player_id: playerId, full_name: name || "…" });
+    if (name) setQuery(name);
+  }, [searchParams, selected?.player_id]);
+
+  const writePlayerUrl = useCallback(
+    (opts: {
+      player?: PlayerHit | null;
+      seasons?: SeasonId[];
+      scope?: SeasonTypeScope;
+      stat?: StatKey;
+    }) => {
+      const player = opts.player !== undefined ? opts.player : selected;
+      if (!player?.player_id) return;
+      const seasons = opts.seasons ?? chartSeasons;
+      const scope = opts.scope ?? chartScope;
+      const nextStat = opts.stat ?? stat;
+      const href = buildPlayerUrl({
+        player_id: player.player_id,
+        name: player.full_name,
+        seasons,
+        scope,
+        stat: nextStat as ChartStatKey,
+      });
+      const curHref = buildPlayerUrl({
+        player_id: searchParams.get("player_id")?.trim() ?? "",
+        name: searchParams.get("name")?.trim() ?? "",
+        seasons: parseSeasonsParam(searchParams.get("seasons")),
+        scope: parseScopeParam(searchParams.get("scope")),
+        stat: parseStatParam(searchParams.get("stat")) as ChartStatKey,
+      });
+      if (href === curHref) return;
+      urlWriteLock.current = true;
+      router.replace(href);
+      window.setTimeout(() => {
+        urlWriteLock.current = false;
+      }, 0);
+    },
+    [selected, chartSeasons, chartScope, stat, searchParams, router]
+  );
+
+  const rememberPlayer = useCallback((p: PlayerHit) => {
+    if (!p.full_name || p.full_name === "…" || p.full_name.startsWith("Player ")) {
+      return;
+    }
+    setRecent(pushRecentPlayer(p));
+  }, []);
+
+  /** Resolve placeholder / missing display name via averages row or directory. */
+  useEffect(() => {
+    if (!selected) return;
+    const needsName =
+      !selected.full_name ||
+      selected.full_name === "…" ||
+      selected.full_name.startsWith("Player ");
+    if (!needsName) {
+      rememberPlayer(selected);
+      return;
+    }
+
+    for (const season of chartSeasons) {
+      const fromAvg = avgBySeason[season]?.row?.full_name;
+      if (fromAvg) {
+        const next = { ...selected, full_name: fromAvg };
+        setSelected((prev) =>
+          prev && prev.player_id === selected.player_id
+            ? { ...prev, full_name: fromAvg }
+            : prev
+        );
+        setQuery(fromAvg);
+        rememberPlayer(next);
+        writePlayerUrl({ player: next });
+        return;
+      }
+    }
+    const fromGame = games[0]?.full_name;
+    if (fromGame) {
+      const next = { ...selected, full_name: fromGame };
+      setSelected((prev) =>
+        prev && prev.player_id === selected.player_id
+          ? { ...prev, full_name: fromGame }
+          : prev
+      );
+      setQuery(fromGame);
+      rememberPlayer(next);
+      writePlayerUrl({ player: next });
+      return;
+    }
+
+    let cancelled = false;
+    async function resolveName() {
+      try {
+        const avgUrl = `/api/player-averages?player_id=${encodeURIComponent(
+          selected!.player_id
+        )}&season=2025-26&scope=reg_only`;
+        const avgRes = await fetch(avgUrl);
+        if (avgRes.ok) {
+          const data = await avgRes.json();
+          const full_name = data.row?.full_name as string | undefined;
+          if (full_name && !cancelled) {
+            const next = { player_id: selected!.player_id, full_name };
+            setSelected((prev) =>
+              prev && prev.player_id === selected!.player_id
+                ? { ...prev, full_name }
+                : prev
+            );
+            setQuery(full_name);
+            rememberPlayer(next);
+            writePlayerUrl({ player: next });
+            return;
+          }
+        }
+      } catch {
+        /* fall through */
+      }
+      // Directory lookup only — never empty-q player-search (would flash full list).
+      try {
+        const dirRes = await fetch("/api/players?directory=1");
+        if (!dirRes.ok) return;
+        const dirData = await dirRes.json();
+        const hit = (dirData.players as PlayerHit[] | undefined)?.find(
+          (p) => String(p.player_id) === String(selected!.player_id)
+        );
+        if (hit?.full_name && !cancelled) {
+          const next = {
+            player_id: selected!.player_id,
+            full_name: hit.full_name,
+          };
+          setSelected((prev) =>
+            prev && prev.player_id === selected!.player_id
+              ? { ...prev, full_name: hit.full_name }
+              : prev
+          );
+          setQuery(hit.full_name);
+          rememberPlayer(next);
+          writePlayerUrl({ player: next });
+        }
+      } catch {
+        /* keep placeholder */
+      }
+    }
+    void resolveName();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    selected,
+    chartSeasons,
+    avgBySeason,
+    games,
+    rememberPlayer,
+    writePlayerUrl,
+  ]);
+
+  const runSearch = useCallback(async (q: string) => {
+    const trimmed = q.trim();
+    if (trimmed.length < SEARCH_MIN_LEN) {
+      setHits([]);
+      return;
+    }
+    try {
+      const res = await fetch(
+        `/api/player-search?q=${encodeURIComponent(trimmed)}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setHits(data.players ?? []);
+    } catch {
+      /* keep prior hits */
+    }
   }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = query.trim();
+    if (trimmed.length < SEARCH_MIN_LEN) {
+      // Gate empty / short queries — API returns top-40 for empty q.
+      setHits([]);
+      return;
+    }
     debounceRef.current = setTimeout(() => {
-      void runSearch(query);
-    }, 180);
+      void runSearch(trimmed);
+    }, SEARCH_DEBOUNCE_MS);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
@@ -211,10 +472,13 @@ export function PlayerExplorer() {
   useEffect(() => {
     if (!selected) {
       setGames([]);
+      setGamesError(null);
+      setGamesLoading(false);
       return;
     }
     let cancelled = false;
     setGamesLoading(true);
+    setGamesError(null);
     const seasons = chartSeasons.join(",");
     const url = `/api/player-games?player_id=${encodeURIComponent(
       selected.player_id
@@ -222,7 +486,17 @@ export function PlayerExplorer() {
       chartScope
     )}`;
     fetch(url)
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(
+            typeof body.error === "string"
+              ? body.error
+              : `Games request failed (${r.status})`
+          );
+        }
+        return r.json();
+      })
       .then((data) => {
         if (cancelled) return;
         setGames(
@@ -232,9 +506,14 @@ export function PlayerExplorer() {
               ? data.games
               : []
         );
+        setGamesError(null);
       })
-      .catch(() => {
-        if (!cancelled) setGames([]);
+      .catch((err) => {
+        if (cancelled) return;
+        setGames([]);
+        setGamesError(
+          err instanceof Error ? err.message : "Failed to load games"
+        );
       })
       .finally(() => {
         if (!cancelled) setGamesLoading(false);
@@ -248,10 +527,13 @@ export function PlayerExplorer() {
   useEffect(() => {
     if (!selected) {
       setAvgBySeason({});
+      setAvgError(null);
+      setAvgLoading(false);
       return;
     }
     let cancelled = false;
     setAvgLoading(true);
+    setAvgError(null);
     const seasons = [...chartSeasons];
     Promise.all(
       seasons.map(async (season) => {
@@ -261,6 +543,14 @@ export function PlayerExplorer() {
           chartScope
         )}`;
         const res = await fetch(url);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(
+            typeof body.error === "string"
+              ? body.error
+              : `Averages request failed (${res.status})`
+          );
+        }
         const data = await res.json();
         // 3PM: mart avg_fg3m only (no client fallbacks).
         const avg_fg3m =
@@ -283,9 +573,14 @@ export function PlayerExplorer() {
         const next: Partial<Record<SeasonId, SeasonAvgBundle>> = {};
         for (const r of results) next[r.season] = r.bundle;
         setAvgBySeason(next);
+        setAvgError(null);
       })
-      .catch(() => {
-        if (!cancelled) setAvgBySeason({});
+      .catch((err) => {
+        if (cancelled) return;
+        setAvgBySeason({});
+        setAvgError(
+          err instanceof Error ? err.message : "Failed to load averages"
+        );
       })
       .finally(() => {
         if (!cancelled) setAvgLoading(false);
@@ -299,23 +594,41 @@ export function PlayerExplorer() {
     setSelected(p);
     setQuery(p.full_name);
     setOpen(false);
+    setHits([]);
+    rememberPlayer(p);
+    writePlayerUrl({ player: p });
   }
 
   function toggleSeason(s: SeasonId) {
+    let next: SeasonId[] | null = null;
     setChartSeasons((prev) => {
       if (prev.includes(s)) {
         if (prev.length === 1) return prev;
-        return prev.filter((x) => x !== s);
+        next = prev.filter((x) => x !== s);
+        return next;
       }
       if (prev.length >= 3) return prev;
-      return [...prev, s].sort() as SeasonId[];
+      next = [...prev, s].sort() as SeasonId[];
+      return next;
     });
+    if (next) writePlayerUrl({ seasons: next });
+  }
+
+  function onScopeChange(next: SeasonTypeScope) {
+    setChartScope(next);
+    writePlayerUrl({ scope: next });
+  }
+
+  function onStatChange(next: StatKey) {
+    setStat(next);
+    writePlayerUrl({ stat: next });
   }
 
   /**
-   * Line chart: X = game_num (1…N per season).
-   * Sort each season's games by game_date, assign index; overlay ≤3 seasons
-   * on the same game-number axis (lines may cross / end at different N).
+   * Line chart consistency:
+   * - Regular scopes: X domain always 1–82 (pad nulls); playoff_only: real N (no fake 82).
+   * - DNP / min<=0 / missing → null (never 0).
+   * - Solid line across adjacent played points; dashed connector across null gaps.
    */
   const chartData = useMemo(() => {
     const bySeason = new Map<string, GameRow[]>();
@@ -339,24 +652,44 @@ export function PlayerExplorer() {
         });
       const m = new Map<number, GameRow>();
       list.forEach((g, i) => {
-        const game_num = i + 1;
-        m.set(game_num, g);
+        m.set(i + 1, g);
       });
       indexed.set(season, m);
       if (list.length > maxN) maxN = list.length;
     }
+    // Reg season / reg+playoffs: fixed shared domain 1–82 (extend if series longer).
+    // Playoffs only: real playoff game index — never force 82.
+    const xMax =
+      chartScope === "playoff_only"
+        ? Math.max(maxN, 1)
+        : Math.max(82, maxN);
     const rows: Record<string, string | number | null>[] = [];
-    for (let game_num = 1; game_num <= maxN; game_num++) {
+    for (let game_num = 1; game_num <= xMax; game_num++) {
       const row: Record<string, string | number | null> = { game_num };
       for (const season of chartSeasons) {
         const g = indexed.get(season)?.get(game_num);
-        row[season] = g ? gameStat(g, stat) : null;
-        row[`date_${season}`] = g ? g.game_date : null;
+        if (!g || !(g.min > 0)) {
+          // DNP / not played / missing → null (never 0)
+          row[season] = null;
+          row[`date_${season}`] = g ? g.game_date : null;
+          row[`dnp_${season}`] = g && !(g.min > 0) ? 1 : null;
+        } else {
+          const v = gameStat(g, stat);
+          row[season] = v == null || Number.isNaN(Number(v)) ? null : v;
+          row[`date_${season}`] = g.game_date;
+        }
       }
       rows.push(row);
     }
     return rows;
-  }, [games, chartSeasons, stat]);
+  }, [games, chartSeasons, chartScope, stat]);
+
+  const xDomainMax = useMemo(() => {
+    if (chartScope === "playoff_only") {
+      return Math.max(chartData.length, 1);
+    }
+    return 82;
+  }, [chartScope, chartData.length]);
 
   const radarData = useMemo(() => {
     return STAT_OPTIONS.map((opt) => {
@@ -375,6 +708,7 @@ export function PlayerExplorer() {
 
   const isPct = STAT_OPTIONS.find((s) => s.key === stat)?.pct === true;
   const hasAnyAvg = chartSeasons.some((s) => avgBySeason[s]?.row);
+  const showDropdown = open && query.trim().length >= SEARCH_MIN_LEN && hits.length > 0;
 
   function formatCardValue(key: StatKey, raw: number | null): string {
     if (raw == null) return "—";
@@ -411,7 +745,7 @@ export function PlayerExplorer() {
                 autoComplete="off"
               />
             </label>
-            {open && hits.length > 0 && (
+            {showDropdown && (
               <div className={styles.dropdown} role="listbox">
                 {hits.map((p) => (
                   <button
@@ -429,6 +763,28 @@ export function PlayerExplorer() {
           </div>
         </div>
       </header>
+
+      {recent.length > 0 && (
+        <div className={styles.recentRow} aria-label="Recent players">
+          <span className={styles.recentLabel}>Recent</span>
+          <div className={styles.recentChips}>
+            {recent.map((p) => (
+              <button
+                key={p.player_id}
+                type="button"
+                className={`${styles.recentChip}${
+                  selected?.player_id === p.player_id
+                    ? ` ${styles.recentChipActive}`
+                    : ""
+                }`}
+                onClick={() => pickPlayer(p)}
+              >
+                {p.full_name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!selected ? (
         <div className={styles.panel}>
@@ -479,7 +835,7 @@ export function PlayerExplorer() {
                     className={
                       chartScope === opt.value ? styles.active : undefined
                     }
-                    onClick={() => setChartScope(opt.value)}
+                    onClick={() => onScopeChange(opt.value)}
                   >
                     {SCOPE_CHART_LABELS[opt.value]}
                   </button>
@@ -491,7 +847,7 @@ export function PlayerExplorer() {
                     key={opt.key}
                     type="button"
                     className={stat === opt.key ? styles.active : undefined}
-                    onClick={() => setStat(opt.key)}
+                    onClick={() => onStatChange(opt.key)}
                   >
                     {opt.label}
                   </button>
@@ -500,11 +856,21 @@ export function PlayerExplorer() {
             </div>
 
             {gamesLoading ? (
-              <p className={styles.empty}>Loading games…</p>
+              <ChartSkeleton label="Loading games…" />
+            ) : gamesError ? (
+              <div className={styles.stateError} role="alert">
+                <p className={styles.stateTitle}>Couldn’t load games</p>
+                <p className={styles.stateBody}>{gamesError}</p>
+              </div>
             ) : chartData.length === 0 ? (
-              <p className={styles.empty}>
-                No games for this player / season / scope.
-              </p>
+              <div className={styles.stateEmpty} role="status">
+                <p className={styles.stateTitle}>No games for this scope</p>
+                <p className={styles.stateBody}>
+                  No games for {selected.full_name} with seasons{" "}
+                  <code>{chartSeasons.join(", ")}</code> and scope{" "}
+                  <code>{chartScope}</code>. Try another season or scope.
+                </p>
+              </div>
             ) : (
               <div className={styles.chartBox}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -519,7 +885,7 @@ export function PlayerExplorer() {
                     <XAxis
                       dataKey="game_num"
                       type="number"
-                      domain={[1, "dataMax"]}
+                      domain={[1, xDomainMax]}
                       allowDecimals={false}
                       stroke="#cbd5e1"
                       tick={{ fill: "#cbd5e1", fontSize: 10 }}
@@ -582,7 +948,22 @@ export function PlayerExplorer() {
                     <Legend
                       wrapperStyle={{ fontSize: 12, maxWidth: "100%" }}
                     />
-                    {chartSeasons.map((s) => (
+                    {chartSeasons.flatMap((s) => [
+                      <Line
+                        key={`${s}-gap`}
+                        type="monotone"
+                        dataKey={s}
+                        name={`${s} gaps`}
+                        stroke={SEASON_COLORS[s] || "#fdba74"}
+                        strokeWidth={1.5}
+                        strokeOpacity={0.55}
+                        strokeDasharray="5 4"
+                        dot={false}
+                        activeDot={false}
+                        legendType="none"
+                        connectNulls
+                        isAnimationActive={false}
+                      />,
                       <Line
                         key={s}
                         type="monotone"
@@ -590,19 +971,24 @@ export function PlayerExplorer() {
                         name={s}
                         stroke={SEASON_COLORS[s] || "#fdba74"}
                         strokeWidth={2}
-                        dot={false}
+                        dot={{ r: 2 }}
                         connectNulls={false}
                         isAnimationActive={false}
-                      />
-                    ))}
+                      />,
+                    ])}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
             <p className={styles.meta} style={{ marginTop: "0.75rem" }}>
-              {games.length} games loaded · x-axis <code>game_num</code>{" "}
-              (1…N per season, sorted by date) · counting stats are per-game;
-              FG%/FT% are single-game rates
+              {gamesLoading
+                ? "Loading…"
+                : `${games.length} games loaded`}{" "}
+              · x-axis <code>game_num</code>
+              {chartScope === "playoff_only"
+                ? " (playoffs: real 1…N, no fake 82)"
+                : " (regular: fixed 1–82; DNP/missing = null; dashed gaps)"}{" "}
+              · counting stats are per-game; FG%/FT% are single-game rates
             </p>
           </section>
 
@@ -614,12 +1000,20 @@ export function PlayerExplorer() {
               seasons match line chart · 3PM = <code>avg_fg3m</code>
             </p>
             {avgLoading ? (
-              <p className={styles.empty}>Loading averages…</p>
+              <ChartSkeleton label="Loading averages…" />
+            ) : avgError ? (
+              <div className={styles.stateError} role="alert">
+                <p className={styles.stateTitle}>Couldn’t load averages</p>
+                <p className={styles.stateBody}>{avgError}</p>
+              </div>
             ) : !hasAnyAvg ? (
-              <p className={styles.empty}>
-                No mart rows for selected seasons /{" "}
-                <code>{chartScope}</code>.
-              </p>
+              <div className={styles.stateEmpty} role="status">
+                <p className={styles.stateTitle}>No mart rows for this scope</p>
+                <p className={styles.stateBody}>
+                  No averages for selected seasons /{" "}
+                  <code>{chartScope}</code>. Try another season or scope.
+                </p>
+              </div>
             ) : (
               <div className={styles.radarBox}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -646,7 +1040,7 @@ export function PlayerExplorer() {
                                 ? "0 0 10px rgba(249,115,22,0.65)"
                                 : undefined,
                             }}
-                            onClick={() => opt && setStat(opt.key)}
+                            onClick={() => opt && onStatChange(opt.key)}
                           >
                             {label}
                           </text>
@@ -703,9 +1097,19 @@ export function PlayerExplorer() {
               <code>avg_fg3m</code> for 3PM)
             </p>
             {avgLoading ? (
-              <p className={styles.empty}>Loading averages…</p>
+              <ChartSkeleton label="Loading averages…" />
+            ) : avgError ? (
+              <div className={styles.stateError} role="alert">
+                <p className={styles.stateTitle}>Couldn’t load averages</p>
+                <p className={styles.stateBody}>{avgError}</p>
+              </div>
             ) : !hasAnyAvg ? (
-              <p className={styles.empty}>No mart averages to show.</p>
+              <div className={styles.stateEmpty} role="status">
+                <p className={styles.stateTitle}>No mart averages to show</p>
+                <p className={styles.stateBody}>
+                  No averages for the selected seasons and scope.
+                </p>
+              </div>
             ) : (
               <div className={styles.metricGrid}>
                 {STAT_OPTIONS.map((opt) => {
@@ -717,7 +1121,7 @@ export function PlayerExplorer() {
                       className={`${styles.metricCard}${
                         active ? ` ${styles.metricCardActive}` : ""
                       }`}
-                      onClick={() => setStat(opt.key)}
+                      onClick={() => onStatChange(opt.key)}
                       aria-pressed={active}
                     >
                       <span className={styles.metricLabel}>{opt.label}</span>
@@ -755,5 +1159,21 @@ export function PlayerExplorer() {
         </>
       )}
     </div>
+  );
+}
+
+export function PlayerExplorer() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.wrap}>
+          <div className={styles.panel}>
+            <ChartSkeleton label="Loading player explorer…" />
+          </div>
+        </div>
+      }
+    >
+      <PlayerExplorerInner />
+    </Suspense>
   );
 }

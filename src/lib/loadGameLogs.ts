@@ -110,7 +110,9 @@ export type GetPlayerGamesParams = {
 
 /**
  * Game-by-game logs for a player from curated parquet.
- * Skips min <= 0. Default scope = reg_only.
+ * Includes DNP / min<=0 rows so the chart can place nulls (never 0) on the
+ * shared game# axis. Callers must treat min<=0 as null stats, not zeros.
+ * Default scope = reg_only.
  */
 export async function getPlayerGameLogs(
   params: GetPlayerGamesParams
@@ -126,7 +128,7 @@ export async function getPlayerGameLogs(
   const all = await loadAllLogs();
   const rows = all.filter((r) => {
     if (r.player_id !== pid) return false;
-    if (!(r.min > 0)) return false;
+    // Keep DNP / min<=0 for null chart slots (do not drop).
     if (seasonSet && !seasonSet.has(r.season)) return false;
     if (types && !types.includes(r.season_type)) return false;
     return true;

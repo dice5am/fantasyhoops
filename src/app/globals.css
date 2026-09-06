@@ -53,3 +53,13 @@ textarea {
     background-attachment: scroll;
   }
 }
+
+/* Hide Next.js tooling chrome on production (belt-and-suspenders). */
+html.prod #__next-build-watcher,
+html.prod [data-nextjs-toast],
+html.prod [data-nextjs-dialog-overlay],
+html.prod nextjs-portal {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

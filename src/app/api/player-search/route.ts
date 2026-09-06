@@ -4,13 +4,18 @@ import { nameMatches } from "@/lib/normalize";
 
 export const runtime = "nodejs";
 
+const MIN_Q = 2;
+
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q") ?? "";
+  const trimmed = q.trim();
   try {
+    // Empty / short q must not dump the directory (prevents typeahead flash).
+    if (trimmed.length < MIN_Q) {
+      return NextResponse.json({ q, count: 0, players: [] });
+    }
     const all = await getPlayerDirectory();
-    const rows = q.trim()
-      ? all.filter((p) => nameMatches(p.full_name, q)).slice(0, 40)
-      : all.slice(0, 40);
+    const rows = all.filter((p) => nameMatches(p.full_name, trimmed)).slice(0, 40);
     return NextResponse.json({ q, count: rows.length, players: rows });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

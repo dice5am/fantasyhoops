@@ -1,4 +1,7 @@
 .nav {
+  position: relative;
+  z-index: 40;
+  overflow: visible;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

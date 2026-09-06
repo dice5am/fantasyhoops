@@ -9,6 +9,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatAvg, formatPct } from "@/lib/format";
 import { nameMatches } from "@/lib/normalize";
@@ -46,7 +47,27 @@ export function PlayerTable({ rows, scope, season }: Props) {
       {
         accessorKey: "full_name",
         header: "Player",
-        cell: (info) => info.getValue<string>(),
+        cell: (info) => {
+          const row = info.row.original;
+          const href = `/player?player_id=${encodeURIComponent(row.player_id)}&name=${encodeURIComponent(row.full_name)}`;
+          return (
+            <span className={styles.playerCellInner}>
+              <Link
+                href={href}
+                className={styles.playerLink}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {info.getValue<string>()}
+              <span className={styles.rowHint} aria-hidden>
+                → profile
+              </span>
+            </Link>
+              <span className={styles.openHint} aria-hidden>
+                Open profile →
+              </span>
+            </span>
+          );
+        },
       },
       {
         accessorKey: "gp",
@@ -155,6 +176,13 @@ export function PlayerTable({ rows, scope, season }: Props) {
     navigate(season, next);
   }
 
+  function goToPlayer(row: SeasonPlayerAverage) {
+    const params = new URLSearchParams();
+    params.set("player_id", String(row.player_id));
+    if (row.full_name) params.set("name", row.full_name);
+    router.push(`/player?${params.toString()}`);
+  }
+
   const emptyMart = rows.length === 0;
   const emptySearch = !emptyMart && filtered.length === 0;
 
@@ -163,7 +191,6 @@ export function PlayerTable({ rows, scope, season }: Props) {
       <div className={styles.glowOrange} aria-hidden />
       <div className={styles.glowCyan} aria-hidden />
       <div className={styles.glowMagenta} aria-hidden />
-
 
       <header className={styles.header}>
         <div>
@@ -246,7 +273,13 @@ export function PlayerTable({ rows, scope, season }: Props) {
                             <button
                               type="button"
                               className={styles.thBtn}
-                              onClick={header.column.getToggleSortingHandler()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const handler =
+                                  header.column.getToggleSortingHandler();
+                                handler?.(e);
+                              }}
+                              onKeyDown={(e) => e.stopPropagation()}
                             >
                               {flexRender(
                                 header.column.columnDef.header,
@@ -269,7 +302,21 @@ export function PlayerTable({ rows, scope, season }: Props) {
               </thead>
               <tbody>
                 {table.getRowModel().rows.map((row) => (
-                  <tr key={row.id}>
+                  <tr
+                    key={row.id}
+                    className={styles.rowClickable}
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => goToPlayer(row.original)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        goToPlayer(row.original);
+                      }
+                    }}
+                    title={`Open ${row.original.full_name} profile`}
+                    aria-label={`Open ${row.original.full_name} profile`}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
