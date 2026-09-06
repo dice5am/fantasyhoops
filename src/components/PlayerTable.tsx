@@ -183,7 +183,7 @@ export function PlayerTable({
     params.set("season", nextSeason);
     const s = nextScope === "reg_plus_playoffs" ? "reg_only" : nextScope;
     params.set("scope", s);
-    router.push(`${filterBasePath}?${params.toString()}`);
+    router.replace(`${filterBasePath}?${params.toString()}`, { scroll: false });
   }
 
   function setSeason(next: SeasonId) {
@@ -203,7 +203,7 @@ export function PlayerTable({
       params.set("season", season);
       const s = scope === "reg_plus_playoffs" ? "reg_only" : scope;
       params.set("scope", s);
-      router.push(`/player?${params.toString()}`);
+      router.replace(`/player?${params.toString()}`, { scroll: false });
       return;
     }
     router.push(`/player?${params.toString()}`);

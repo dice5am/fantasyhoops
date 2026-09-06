@@ -266,7 +266,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable }: { hideRecent
       });
       if (href === curHref) return;
       urlWriteLock.current = true;
-      router.replace(href);
+      router.replace(href, { scroll: false });
       window.setTimeout(() => {
         urlWriteLock.current = false;
       }, 0);

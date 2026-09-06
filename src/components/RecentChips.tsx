@@ -60,7 +60,7 @@ export function RecentChips({ activePlayerId, accent }: Props) {
                 const params = new URLSearchParams();
                 params.set("player_id", p.player_id);
                 if (p.full_name) params.set("name", p.full_name);
-                router.push(`/player?${params.toString()}`);
+                router.replace(`/player?${params.toString()}`, { scroll: false });
               }}
             >
               {p.full_name}

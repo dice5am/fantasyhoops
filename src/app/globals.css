@@ -93,3 +93,17 @@ html.prod nextjs-portal {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+/* Mobile type / layout baseline */
+@media (max-width: 800px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  body {
+    letter-spacing: -0.014em;
+  }
+}

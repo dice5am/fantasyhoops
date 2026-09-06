@@ -141,7 +141,7 @@ export function HomeDashboard({ context, season, scope, universe }: Props) {
     const s = nextScope === "reg_plus_playoffs" ? "reg_only" : nextScope;
     params.set("scope", s);
     params.set("universe", nextUniverse);
-    router.push(`/?${params.toString()}`);
+    router.replace(`/?${params.toString()}`, { scroll: false });
   }
 
   const uiScope: "reg_only" | "playoff_only" =

@@ -1,7 +1,16 @@
-.hub {
+.hub,
+.hubOpen {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.hubOpen {
+  gap: 0.35rem;
 }
 
 .explorerIdle,
@@ -19,7 +28,8 @@
 }
 
 @media (max-width: 800px) {
-  .hub {
+  .hub,
+  .hubOpen {
     gap: 0.15rem;
   }
 }
@@ -32,6 +42,8 @@
   max-width: 1120px;
   margin: 0 auto;
   padding: 0.75rem 1rem 0;
+  width: 100%;
+  min-width: 0;
 }
 
 .recentLabel {
@@ -46,6 +58,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .recentChip {
@@ -59,6 +73,7 @@
   font-size: 0.82rem;
   cursor: pointer;
   min-height: 36px;
+  touch-action: manipulation;
 }
 
 .recentChip:hover {
@@ -72,5 +87,16 @@
   }
   .recentChip {
     min-height: 44px;
+    padding: 0.5rem 0.85rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .recentRow {
+    padding: 0.55rem 0.65rem 0;
+    gap: 0.45rem;
+  }
+  .recentLabel {
+    font-size: 0.68rem;
   }
 }

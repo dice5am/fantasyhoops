@@ -547,44 +547,153 @@
 }
 
 
-/* Compact Player-tab embedding */
+/* Compact Player-tab embedding — nest inside Explorer without double chrome width */
 .compact {
-  padding-top: 0.75rem;
-  padding-bottom: 1.25rem;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0.35rem 0 0.85rem;
+  overflow-x: clip;
 }
 
 .compact .header {
-  padding: 0.85rem 1rem;
-  margin-bottom: 0.55rem;
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 0.45rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
 }
 
 .compact .title {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.compact .subtitle {
+  font-size: 0.8rem;
+}
+
+.compact .controls {
+  width: 100%;
+  gap: 0.55rem;
+}
+
+.compact .meta {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  padding: 0 0.1rem;
 }
 
 .compact .table {
-  min-width: 44rem;
-  font-size: 0.84rem;
+  min-width: 40rem;
+  font-size: 0.8rem;
+}
+
+.compact .table th,
+.compact .table td {
+  padding: 0.45rem 0.4rem;
 }
 
 .compact .player {
-  min-width: 7.25rem;
-  font-size: 0.84rem;
+  min-width: 6.5rem;
+  max-width: 8.5rem;
+  font-size: 0.8rem;
+}
+
+.compact .playerLink {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.compact .num {
+  font-size: 0.78rem;
+}
+
+@media (max-width: 800px) {
+  .compact {
+    padding: 0.25rem 0 0.65rem;
+  }
+
+  .compact .header {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .compact .title {
+    font-size: 1rem;
+  }
+
+  .compact .seg {
+    width: 100%;
+  }
+
+  .compact .seg button {
+    min-height: 44px;
+    flex: 1 1 auto;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.55rem;
+  }
+
+  .compact .search {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .compact .table {
+    min-width: 36rem;
+    font-size: 0.78rem;
+  }
+
+  .compact .player {
+    min-width: 5.75rem;
+    max-width: 7.25rem;
+  }
 }
 
 @media (max-width: 420px) {
+  .compact .header {
+    padding: 0.65rem 0.65rem;
+    gap: 0.55rem;
+  }
+
+  .compact .title {
+    font-size: 0.95rem;
+  }
+
+  .compact .subtitle {
+    font-size: 0.75rem;
+  }
+
+  .compact .table {
+    min-width: 34rem;
+    font-size: 0.75rem;
+  }
+
+  .compact .table th,
+  .compact .table td {
+    padding: 0.55rem 0.35rem;
+  }
+
   .compact .table thead th:first-child,
   .compact .table tbody td.player {
-    min-width: 6.25rem;
-    max-width: 7.5rem;
+    min-width: 5.5rem;
+    max-width: 6.75rem;
   }
 
   .compact .playerLink {
-    font-size: 0.8rem;
-    letter-spacing: -0.015em;
+    font-size: 0.75rem;
+    letter-spacing: -0.02em;
   }
 
   .compact .search input {
     font-size: 16px; /* prevent iOS zoom */
+  }
+
+  .compact .thBtn {
+    min-height: 44px;
+    font-size: 0.72rem;
   }
 }
