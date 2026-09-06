@@ -86,11 +86,46 @@ const STAT_OPTIONS: { key: StatKey; label: string; pct?: boolean }[] = [
   { key: "tov", label: "TOV" },
 ];
 
-const SEASON_COLORS: Record<string, string> = {
-  "2023-24": "#22d3ee",
-  "2024-25": "#e879f9",
-  "2025-26": "#f97316",
-};
+/** Stable base hue (0–360) per player_id — prep for multi-player overlays. */
+function playerBaseHue(playerId: string | null | undefined): number {
+  const id = playerId ?? "0";
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % 360;
+}
+
+/**
+ * Season stroke colors: one hue per player; newest season brightest.
+ * 1 season → full brightness. 2+ → newest 100%, older stepped dimmer.
+ */
+function seasonStrokeColors(
+  playerId: string | null | undefined,
+  seasons: SeasonId[]
+): Record<string, string> {
+  const hue = playerBaseHue(playerId);
+  const sorted = [...seasons].sort(); // chronological; last = newest
+  const n = sorted.length;
+  const out: Record<string, string> = {};
+  sorted.forEach((season, idxFromOldest) => {
+    // newest (last) → light 62 / alpha 1; older → lower light + alpha
+    const rankFromNewest = n - 1 - idxFromOldest; // 0 = newest
+    let light: number;
+    let alpha: number;
+    if (n <= 1) {
+      light = 58;
+      alpha = 1;
+    } else if (n === 2) {
+      light = rankFromNewest === 0 ? 60 : 42;
+      alpha = rankFromNewest === 0 ? 1 : 0.72;
+    } else {
+      // 3 seasons
+      light = rankFromNewest === 0 ? 62 : rankFromNewest === 1 ? 48 : 36;
+      alpha = rankFromNewest === 0 ? 1 : rankFromNewest === 1 ? 0.78 : 0.55;
+    }
+    out[season] = `hsla(${hue}, 92%, ${light}%, ${alpha})`;
+  });
+  return out;
+}
 
 /** Fixed fantasy ranges for radar (0–100 display). TOV is inverted. */
 const RADAR_RANGES: Record<
@@ -702,6 +737,11 @@ function PlayerExplorerInner() {
     });
   }, [avgBySeason, chartSeasons]);
 
+  const seasonColors = useMemo(
+    () => seasonStrokeColors(selected?.player_id, chartSeasons),
+    [selected?.player_id, chartSeasons]
+  );
+
   const isPct = STAT_OPTIONS.find((s) => s.key === stat)?.pct === true;
   const hasAnyAvg = chartSeasons.some((s) => avgBySeason[s]?.row);
   const showDropdown = open && query.trim().length >= SEARCH_MIN_LEN && hits.length > 0;
@@ -944,34 +984,38 @@ function PlayerExplorerInner() {
                     <Legend
                       wrapperStyle={{ fontSize: 12, maxWidth: "100%" }}
                     />
-                    {chartSeasons.flatMap((s) => [
-                      <Line
-                        key={`${s}-gap`}
-                        type="monotone"
-                        dataKey={s}
-                        name={`${s} gaps`}
-                        stroke={SEASON_COLORS[s] || "#fdba74"}
-                        strokeWidth={1.5}
-                        strokeOpacity={0.55}
-                        strokeDasharray="5 4"
-                        dot={false}
-                        activeDot={false}
-                        legendType="none"
-                        connectNulls
-                        isAnimationActive={false}
-                      />,
-                      <Line
-                        key={s}
-                        type="monotone"
-                        dataKey={s}
-                        name={s}
-                        stroke={SEASON_COLORS[s] || "#fdba74"}
-                        strokeWidth={2}
-                        dot={{ r: 2 }}
-                        connectNulls={false}
-                        isAnimationActive={false}
-                      />,
-                    ])}
+                    {chartSeasons.flatMap((s) => {
+                      const stroke = seasonColors[s] || "#fdba74";
+                      return [
+                        <Line
+                          key={`${s}-gap`}
+                          type="monotone"
+                          dataKey={s}
+                          name={`${s} gaps`}
+                          stroke={stroke}
+                          strokeWidth={chartScope === "playoff_only" ? 1.5 : 2}
+                          strokeDasharray={
+                            chartScope === "playoff_only" ? "5 4" : "2 6"
+                          }
+                          dot={false}
+                          activeDot={false}
+                          legendType="none"
+                          connectNulls
+                          isAnimationActive={false}
+                        />,
+                        <Line
+                          key={s}
+                          type="monotone"
+                          dataKey={s}
+                          name={s}
+                          stroke={stroke}
+                          strokeWidth={2.25}
+                          dot={{ r: 2, strokeWidth: 0, fill: stroke }}
+                          connectNulls={false}
+                          isAnimationActive={false}
+                        />,
+                      ];
+                    })}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -983,7 +1027,7 @@ function PlayerExplorerInner() {
               · x-axis <code>game_num</code>
               {chartScope === "playoff_only"
                 ? " (playoffs: fixed 1–28; DNP/not-reached = null; dashed gaps)"
-                : " (regular: fixed 1–82; DNP/missing = null; dashed gaps)"}{" "}
+                : " (regular: fixed 1–82; solid played; dotted gaps; null≠0; newest season brightest)"}{" "}
               · counting stats are per-game; FG%/FT% are single-game rates
             </p>
           </section>
@@ -1054,8 +1098,8 @@ function PlayerExplorerInner() {
                         key={s}
                         name={s}
                         dataKey={s}
-                        stroke={SEASON_COLORS[s] || "#fdba74"}
-                        fill={SEASON_COLORS[s] || "#fdba74"}
+                        stroke={seasonColors[s] || "#fdba74"}
+                        fill={seasonColors[s] || "#fdba74"}
                         fillOpacity={0.22}
                         strokeWidth={2}
                         isAnimationActive={false}
@@ -1134,7 +1178,7 @@ function PlayerExplorerInner() {
                               <span
                                 className={styles.metricDot}
                                 style={{
-                                  background: SEASON_COLORS[s] || "#fdba74",
+                                  background: seasonColors[s] || "#fdba74",
                                 }}
                                 aria-hidden
                               />
