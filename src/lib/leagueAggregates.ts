@@ -45,7 +45,7 @@ export type LeagueAggregateFilters = {
   min_gp?: number;
   /** Min avg minutes; reserved — unused this BUILD (requires avg_min filter). */
   min_min?: number;
-  /** Keep top N% by a ranking key; reserved — unused this BUILD. */
+  /** Echo / reserved; Home applies topPct via filterByTopPct before build. */
   top_pct?: number;
 };
 
@@ -107,7 +107,7 @@ function applyRowFilters(
   if (minMin != null && minMin > 0) {
     out = out.filter((r) => r.avg_min >= minMin);
   }
-  // top_pct reserved — no-op this BUILD (shape documented for future)
+  // top_pct applied upstream (filterByTopPct); no-op here
   void filters?.top_pct;
   return out;
 }
@@ -293,7 +293,8 @@ export function computeStocksLeaders(
 export type LeagueContextPayload = {
   season: string;
   season_type_scope: string;
-  universe: string;
+  /** Integer % of top-250 by minutes (10–100). */
+  topPct: number;
   player_count: number;
   league_avgs: LeagueAvgs;
   leaders: Record<RadarStatKey, LeaderEntry[]>;
@@ -309,16 +310,16 @@ export type LeagueContextPayload = {
 
 /**
  * Build full Home league context from mart rows + optional team map.
- * Caller should Top-250 then Universe-filter rows first (selectTop250ByMpg → filterByUniverse).
+ * Caller should Top-250 then topPct-filter rows first (selectTop250ByMpg → filterByTopPct).
  */
 export function buildLeagueContext(
   rows: SeasonPlayerAverage[],
   opts: {
     season: string;
     season_type_scope: string;
-    universe?: string;
+    topPct?: number;
     teamByPlayer?: Map<string, string>;
-    /** Reserved filters stacked on Universe-prefiltered rows. */
+    /** Optional filters stacked on topPct-prefiltered rows. */
     filters?: LeagueAggregateFilters;
     leader_min_gp?: number;
   }
@@ -327,7 +328,7 @@ export function buildLeagueContext(
   const filtered = applyRowFilters(rows, {
     min_gp: opts.filters?.min_gp ?? 0,
     min_min: opts.filters?.min_min,
-    top_pct: opts.filters?.top_pct,
+    // top_pct already applied by caller via filterByTopPct
   });
   const league_avgs = computeLeagueAvgs(filtered, { min_gp: 0 });
 
@@ -339,10 +340,12 @@ export function buildLeagueContext(
     });
   }
 
+  const topPct = opts.topPct ?? opts.filters?.top_pct ?? 100;
+
   return {
     season: opts.season,
     season_type_scope: opts.season_type_scope,
-    universe: opts.universe ?? "all",
+    topPct,
     player_count: filtered.length,
     league_avgs,
     leaders,
@@ -354,7 +357,7 @@ export function buildLeagueContext(
     filters: {
       min_gp: opts.filters?.min_gp ?? null,
       min_min: opts.filters?.min_min ?? null,
-      top_pct: opts.filters?.top_pct ?? null,
+      top_pct: topPct,
     },
   };
 }

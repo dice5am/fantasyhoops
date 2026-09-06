@@ -109,9 +109,76 @@
   background: rgba(212, 184, 150, 0.12);
 }
 
-.universeSeg {
-  border-color: rgba(212, 184, 150, 0.35);
-  box-shadow: 0 0 0 1px rgba(212, 184, 150, 0.08);
+/* Slim topPct slider — low height, mobile-first; do not dominate header */
+.topPctControl {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 9.5rem;
+  max-width: 14rem;
+  flex: 1 1 9.5rem;
+  padding: 0.15rem 0.35rem 0.25rem;
+  border-radius: 8px;
+  border: 1px solid rgba(212, 184, 150, 0.22);
+  background: rgba(18, 18, 20, 0.45);
+}
+
+.topPctLabel {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #c4b5a0;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.topPctSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  margin: 0;
+  border-radius: 999px;
+  background: rgba(212, 184, 150, 0.28);
+  outline: none;
+  cursor: pointer;
+}
+
+.topPctSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(212, 184, 150, 0.95),
+    rgba(160, 130, 95, 0.9)
+  );
+  border: 1px solid rgba(26, 22, 18, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.topPctSlider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(212, 184, 150, 0.95),
+    rgba(160, 130, 95, 0.9)
+  );
+  border: 1px solid rgba(26, 22, 18, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.topPctSlider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(212, 184, 150, 0.28);
 }
 
 .seg button.active {
@@ -437,6 +504,32 @@
     min-width: 44px;
     padding: 0.5rem 0.55rem;
     font-size: 0.78rem;
+  }
+
+  .topPctControl {
+    width: 100%;
+    max-width: none;
+    flex: 1 1 100%;
+    min-width: 0;
+    padding: 0.25rem 0.45rem 0.35rem;
+  }
+
+  .topPctLabel {
+    font-size: 0.72rem;
+  }
+
+  .topPctSlider {
+    height: 5px;
+  }
+
+  .topPctSlider::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+  }
+
+  .topPctSlider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
   }
 
   .meta {

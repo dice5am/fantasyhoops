@@ -1,6 +1,5 @@
 import type { SeasonTypeScope } from "@/types/season_player_averages";
 import type { RadarStatKey } from "@/lib/radar";
-import type { UniverseId } from "@/lib/universe";
 
 export type LeaderEntry = {
   player_id: string;
@@ -20,18 +19,15 @@ export type FgPctHistBin = {
 };
 
 export type LeagueContextFilters = {
-  /** Reserved — future UI slider. Leaders/hist default min_gp=10 when unset. */
   min_gp: number | null;
-  /** Reserved — future minutes floor (Universe covers common presets today). */
   min_min: number | null;
-  /** Reserved — future top-N% filter (no Top 25% in UI). */
   top_pct: number | null;
 };
 
 export type LeagueContext = {
   season: string;
   season_type_scope: SeasonTypeScope;
-  universe: UniverseId;
+  topPct: number;
   player_count: number;
   league_avgs: LeagueAvgs;
   leaders: Record<RadarStatKey, LeaderEntry[]>;

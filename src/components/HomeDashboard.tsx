@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -29,14 +29,20 @@ import {
 } from "@/lib/radar";
 import type { SeasonTypeScope } from "@/types/season_player_averages";
 import { SCOPE_OPTIONS, SEASON_OPTIONS } from "@/types/season_player_averages";
-import { UNIVERSE_OPTIONS, type UniverseId } from "@/lib/universe";
+import {
+  DEFAULT_TOP_PCT,
+  TOP_PCT_MAX,
+  TOP_PCT_MIN,
+  TOP_PCT_STEP,
+  topPctLabel,
+} from "@/lib/top250";
 import styles from "./HomeDashboard.module.css";
 
 type Props = {
   context: LeagueContextPayload;
   season: string;
   scope: SeasonTypeScope;
-  universe: UniverseId;
+  topPct: number;
 };
 
 function fmtStat(key: RadarStatKey, v: number | null | undefined): string {
@@ -114,8 +120,21 @@ function TriptychPanel({
   );
 }
 
-export function HomeDashboard({ context, season, scope, universe }: Props) {
+export function HomeDashboard({
+  context: initialContext,
+  season: initialSeason,
+  scope: initialScope,
+  topPct: initialTopPct,
+}: Props) {
   const router = useRouter();
+  const [context, setContext] = useState(initialContext);
+  const [season, setSeason] = useState(initialSeason);
+  const [scope, setScope] = useState(initialScope);
+  const [topPct, setTopPct] = useState(
+    Number.isFinite(initialTopPct) ? initialTopPct : DEFAULT_TOP_PCT
+  );
+  const [loading, setLoading] = useState(false);
+  const fetchGen = useRef(0);
 
   const radarData = useMemo(() => {
     return RADAR_SPOKE_ORDER.map((key) => {
@@ -130,25 +149,52 @@ export function HomeDashboard({ context, season, scope, universe }: Props) {
     });
   }, [context.league_avgs]);
 
-  function navigate(
-    nextSeason: string,
-    nextScope: SeasonTypeScope,
-    nextUniverse: UniverseId = universe
-  ) {
-    const params = new URLSearchParams();
-    params.set("season", nextSeason);
-    // Never write reg_plus_playoffs
-    const s = nextScope === "reg_plus_playoffs" ? "reg_only" : nextScope;
-    params.set("scope", s);
-    params.set("universe", nextUniverse);
-    router.replace(`/?${params.toString()}`, { scroll: false });
-  }
+  const applyFilters = useCallback(
+    async (
+      nextSeason: string,
+      nextScope: SeasonTypeScope,
+      nextTopPct: number
+    ) => {
+      const s = nextScope === "reg_plus_playoffs" ? "reg_only" : nextScope;
+      const pct = Number.isFinite(nextTopPct) ? nextTopPct : DEFAULT_TOP_PCT;
+      setSeason(nextSeason);
+      setScope(s);
+      setTopPct(pct);
+      // router.replace + scroll:false — no scroll jump; client fetch avoids remount flash
+      const params = new URLSearchParams();
+      params.set("season", nextSeason);
+      params.set("scope", s);
+      params.set("topPct", String(pct));
+      router.replace(`/?${params.toString()}`, { scroll: false });
+
+      const gen = ++fetchGen.current;
+      setLoading(true);
+      try {
+        const qs = new URLSearchParams();
+        qs.set("season", nextSeason);
+        qs.set("scope", s);
+        qs.set("topPct", String(pct));
+        const res = await fetch(`/api/league-context?${qs.toString()}`);
+        if (!res.ok) throw new Error(`league-context ${res.status}`);
+        const data = (await res.json()) as LeagueContextPayload;
+        if (gen !== fetchGen.current) return;
+        setContext(data);
+      } catch {
+        // Keep prior context on failure; URL already reflects requested filters.
+      } finally {
+        if (gen === fetchGen.current) setLoading(false);
+      }
+    },
+    [router]
+  );
 
   const uiScope: "reg_only" | "playoff_only" =
     scope === "playoff_only" ? "playoff_only" : "reg_only";
 
+  const pct = Number.isFinite(topPct) ? topPct : DEFAULT_TOP_PCT;
+
   return (
-    <div className={styles.wrap}>
+    <div className={styles.wrap} data-loading={loading ? "1" : "0"}>
       <div className={styles.glowA} aria-hidden />
       <div className={styles.glowB} aria-hidden />
 
@@ -166,7 +212,7 @@ export function HomeDashboard({ context, season, scope, universe }: Props) {
                 key={s}
                 type="button"
                 className={season === s ? styles.active : undefined}
-                onClick={() => navigate(s, uiScope)}
+                onClick={() => applyFilters(s, uiScope, pct)}
               >
                 {s}
               </button>
@@ -178,35 +224,35 @@ export function HomeDashboard({ context, season, scope, universe }: Props) {
                 key={opt.value}
                 type="button"
                 className={uiScope === opt.value ? styles.active : undefined}
-                onClick={() => navigate(season, opt.value)}
+                onClick={() => applyFilters(season, opt.value, pct)}
               >
                 {opt.label}
               </button>
             ))}
           </div>
-          <div
-            className={`${styles.seg} ${styles.universeSeg}`}
-            role="group"
-            aria-label="Player universe"
-          >
-            {UNIVERSE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                title={opt.hint}
-                className={universe === opt.value ? styles.active : undefined}
-                onClick={() => navigate(season, uiScope, opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          <label className={styles.topPctControl}>
+            <span className={styles.topPctLabel}>
+              {topPctLabel(pct, context.player_count)}
+            </span>
+            <input
+              type="range"
+              className={styles.topPctSlider}
+              min={TOP_PCT_MIN}
+              max={TOP_PCT_MAX}
+              step={TOP_PCT_STEP}
+              value={pct}
+              aria-label="Top percent by minutes within top 250"
+              onChange={(e) =>
+                applyFilters(season, uiScope, Number(e.target.value))
+              }
+            />
+          </label>
         </div>
       </header>
 
       <p className={styles.meta}>
         {context.player_count} players · season <code>{season}</code> · scope{" "}
-        <code>{uiScope}</code> · universe <code>{universe}</code>
+        <code>{uiScope}</code> · topPct <code>{pct}</code>
         {" · "}
         <Link href="/player" className={styles.metaLink}>
           Browse players →

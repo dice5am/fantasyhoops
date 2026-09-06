@@ -8,7 +8,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatAvg, formatPct } from "@/lib/format";
@@ -37,18 +37,22 @@ type Props = {
 };
 
 export function PlayerTable({
-  rows,
-  scope,
-  season,
+  rows: initialRows,
+  scope: initialScope,
+  season: initialSeason,
   compact = false,
   filterBasePath = "/player",
   selectInPlace = false,
 }: Props) {
   const router = useRouter();
+  const [rows, setRows] = useState(initialRows);
+  const [scope, setScopeState] = useState(initialScope);
+  const [season, setSeasonState] = useState(initialSeason);
   const [sorting, setSorting] = useState<SortingState>([
     { id: "avg_pts", desc: true },
   ]);
   const [query, setQuery] = useState("");
+  const fetchGen = useRef(0);
 
   const filtered = useMemo(
     () => rows.filter((r) => nameMatches(r.full_name, query)),
@@ -178,20 +182,49 @@ export function PlayerTable({
     getSortedRowModel: getSortedRowModel(),
   });
 
-  function navigate(nextSeason: string, nextScope: SeasonTypeScope) {
-    const params = new URLSearchParams();
-    params.set("season", nextSeason);
-    const s = nextScope === "reg_plus_playoffs" ? "reg_only" : nextScope;
-    params.set("scope", s);
-    router.replace(`${filterBasePath}?${params.toString()}`, { scroll: false });
-  }
+  const navigate = useCallback(
+    async (nextSeason: string, nextScope: SeasonTypeScope) => {
+      const s = nextScope === "reg_plus_playoffs" ? "reg_only" : nextScope;
+      setSeasonState(nextSeason);
+      setScopeState(s);
+
+      // Preserve other query params (player_id/name/stat/seasons) when on /player
+      const params = new URLSearchParams(
+        typeof window !== "undefined" ? window.location.search : ""
+      );
+      params.set("season", nextSeason);
+      params.set("scope", s);
+      const url = `${filterBasePath}?${params.toString()}`;
+      const y = typeof window !== "undefined" ? window.scrollY : 0;
+      window.history.replaceState(window.history.state, "", url);
+      // Restore scroll in case any layout shift occurs
+      requestAnimationFrame(() => {
+        window.scrollTo(0, y);
+      });
+
+      const gen = ++fetchGen.current;
+      try {
+        const qs = new URLSearchParams();
+        qs.set("season", nextSeason);
+        qs.set("scope", s);
+        const res = await fetch(`/api/players?${qs.toString()}`);
+        if (!res.ok) throw new Error(`players ${res.status}`);
+        const data = (await res.json()) as { rows?: SeasonPlayerAverage[] };
+        if (gen !== fetchGen.current) return;
+        setRows(Array.isArray(data.rows) ? data.rows : []);
+      } catch {
+        // Keep prior rows on failure
+      }
+    },
+    [filterBasePath]
+  );
 
   function setSeason(next: SeasonId) {
-    navigate(next, scope);
+    void navigate(next, scope);
   }
 
   function setScope(next: SeasonTypeScope) {
-    navigate(season, next);
+    void navigate(season, next);
   }
 
   function goToPlayer(row: SeasonPlayerAverage) {
@@ -199,11 +232,20 @@ export function PlayerTable({
     params.set("player_id", String(row.player_id));
     if (row.full_name) params.set("name", row.full_name);
     if (selectInPlace) {
-      // Preserve season/scope on player hub
+      // Preserve season/scope on player hub — avoid remount scroll jump
       params.set("season", season);
       const s = scope === "reg_plus_playoffs" ? "reg_only" : scope;
       params.set("scope", s);
+      const y = window.scrollY;
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `/player?${params.toString()}`
+      );
+      requestAnimationFrame(() => window.scrollTo(0, y));
+      // Soft-notify Next of URL change for searchParams consumers without full nav
       router.replace(`/player?${params.toString()}`, { scroll: false });
+      requestAnimationFrame(() => window.scrollTo(0, y));
       return;
     }
     router.push(`/player?${params.toString()}`);

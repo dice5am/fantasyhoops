@@ -1,7 +1,7 @@
 import { HomeDashboard } from "@/components/HomeDashboard";
 import { getLeagueContext } from "@/lib/loadMart";
 import { parseScope, parseSeason } from "@/lib/scope";
-import { parseUniverse } from "@/lib/universe";
+import { parseTopPct } from "@/lib/top250";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 type SearchParams = Promise<{
   scope?: string;
   season?: string;
+  topPct?: string;
+  /** @deprecated legacy — maps to topPct 100 */
   universe?: string;
 }>;
 
@@ -20,11 +22,16 @@ export default async function Home({
   const sp = await searchParams;
   const season = parseSeason(sp.season);
   const scope = parseScope(sp.scope);
-  const universe = parseUniverse(sp.universe);
+  const topPct =
+    sp.topPct != null && sp.topPct !== ""
+      ? parseTopPct(sp.topPct)
+      : sp.universe != null && sp.universe !== ""
+        ? 100
+        : parseTopPct(undefined);
   const context = await getLeagueContext({
     season,
     season_type_scope: scope,
-    universe,
+    topPct,
   });
 
   return (
@@ -32,7 +39,7 @@ export default async function Home({
       context={context}
       season={season}
       scope={scope}
-      universe={universe}
+      topPct={topPct}
     />
   );
 }

@@ -15,8 +15,12 @@ import {
   type LeagueContextPayload,
 } from "@/lib/leagueAggregates";
 import { getPrimaryTeamMap } from "@/lib/loadGameLogs";
-import { filterByUniverse, parseUniverse, type UniverseId } from "@/lib/universe";
-import { selectTop250ByMpg, top250IdSet } from "@/lib/top250";
+import {
+  filterByTopPct,
+  parseTopPct,
+  selectTop250ByMpg,
+  top250IdSet,
+} from "@/lib/top250";
 
 import path from "path";
 
@@ -124,7 +128,10 @@ async function loadAllMartRows(): Promise<SeasonPlayerAverage[]> {
   return rows;
 }
 
-/** Full mart read — no Top-250 trim (deep-link / player-averages / game logs). */
+/**
+ * Server-side read of the live parquet mart (hyparquet).
+ * Full mart — no Top-250 trim (deep-link / player-averages / game logs).
+ */
 export async function getSeasonPlayerAverages(
   params: GetSeasonPlayerAveragesParams = {}
 ): Promise<SeasonPlayerAverage[]> {
@@ -155,6 +162,7 @@ export async function getSeasonPlayerAveragesTop250(
   return selectTop250ByMpg(rows);
 }
 
+/** Unique players from mart for unicode search/select (full mart — legacy). */
 export async function getPlayerDirectory(): Promise<PlayerDirectoryEntry[]> {
   const all = await loadAllMartRows();
   const map = new Map<string, string>();
@@ -186,6 +194,7 @@ export async function getPlayerDirectoryTop250(params?: {
   return entries;
 }
 
+/** Whether player_id is in the Top-250 pool for season+scope. */
 export async function isInTop250Pool(params: {
   player_id: string;
   season?: string;
@@ -202,37 +211,45 @@ export type { LeaderEntry, LeagueAvgs, FgPctHistBin, LeagueContextPayload };
 export type LeagueContext = LeagueContextPayload;
 
 /**
- * Pipeline: season+scope mart → Top 250 by MPG → Universe filter → aggregates.
+ * GP-weighted league averages + top-5 leaders + FG% hist + stocks leaders.
+ * Pipeline: season+scope mart → Top 250 by MPG → topPct slice → aggregates.
  */
 export async function getLeagueContext(params: {
   season?: string;
   season_type_scope?: SeasonTypeScope;
-  universe?: UniverseId | string;
+  /** Integer % 10–100 within top-250 (preferred). */
+  topPct?: number | string;
+  /** @deprecated Prefer topPct; legacy universe query maps to 100. */
+  universe?: string;
   min_gp?: number;
   min_min?: number;
-  top_pct?: number;
   teamByPlayer?: Map<string, string>;
 }): Promise<LeagueContextPayload> {
   const season = params.season ?? DEFAULT_SEASON;
   const season_type_scope = params.season_type_scope ?? DEFAULT_SCOPE;
-  const universe = parseUniverse(
-    typeof params.universe === "string" ? params.universe : undefined
-  );
+  let topPct: number;
+  if (params.topPct != null && params.topPct !== "") {
+    topPct = parseTopPct(String(params.topPct));
+  } else if (params.universe != null && params.universe !== "") {
+    topPct = 100;
+  } else {
+    topPct = parseTopPct(undefined);
+  }
   const rows = await getSeasonPlayerAverages({ season, season_type_scope });
   const top250 = selectTop250ByMpg(rows);
-  const filtered = filterByUniverse(top250, universe);
+  const filtered = filterByTopPct(top250, topPct);
   const teamByPlayer =
     params.teamByPlayer ??
     (await getPrimaryTeamMap({ season, season_type_scope }));
   return buildLeagueContext(filtered, {
     season,
     season_type_scope,
-    universe,
+    topPct,
     teamByPlayer,
     filters: {
       min_gp: params.min_gp,
       min_min: params.min_min,
-      top_pct: params.top_pct,
+      top_pct: topPct,
     },
   });
 }

@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLeagueContext } from "@/lib/loadMart";
 import { parseScope, parseSeason } from "@/lib/scope";
-import { parseUniverse } from "@/lib/universe";
+import { parseTopPct } from "@/lib/top250";
 
 export const runtime = "nodejs";
 
 /**
- * GET /api/league-context?season=&scope=&universe=
- * Universe presets: all | min20 (default) | top10min — server-side avg_min filter.
- * Reserved (documented, optional): min_gp, min_min, top_pct
- * Any reg_plus_playoffs → reg_only.
+ * GET /api/league-context?season=&scope=&topPct=
+ * topPct: integer 10–100 (default 100) — Top X% by minutes within top-250.
+ * Legacy ?universe= → treated as topPct 100.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -17,11 +16,18 @@ export async function GET(req: NextRequest) {
   const scope = parseScope(
     searchParams.get("scope") ?? searchParams.get("season_type_scope")
   );
-  const universe = parseUniverse(searchParams.get("universe"));
+
+  const topPctRaw = searchParams.get("topPct") ?? searchParams.get("top_pct");
+  const universeRaw = searchParams.get("universe");
+  const topPct =
+    topPctRaw != null && topPctRaw !== ""
+      ? parseTopPct(topPctRaw)
+      : universeRaw != null && universeRaw !== ""
+        ? 100
+        : parseTopPct(undefined);
 
   const minGpRaw = searchParams.get("min_gp");
   const minMinRaw = searchParams.get("min_min");
-  const topPctRaw = searchParams.get("top_pct");
 
   const min_gp =
     minGpRaw != null && minGpRaw !== "" && !Number.isNaN(Number(minGpRaw))
@@ -31,19 +37,14 @@ export async function GET(req: NextRequest) {
     minMinRaw != null && minMinRaw !== "" && !Number.isNaN(Number(minMinRaw))
       ? Number(minMinRaw)
       : undefined;
-  const top_pct =
-    topPctRaw != null && topPctRaw !== "" && !Number.isNaN(Number(topPctRaw))
-      ? Number(topPctRaw)
-      : undefined;
 
   try {
     const ctx = await getLeagueContext({
       season,
       season_type_scope: scope,
-      universe,
+      topPct,
       min_gp,
       min_min,
-      top_pct,
     });
     return NextResponse.json(ctx);
   } catch (err) {
