@@ -625,11 +625,15 @@ function PlayerExplorerInner() {
   }
 
   /**
-   * Line chart consistency:
-   * - Regular scopes: X domain always 1–82 (pad nulls); playoff_only: real N (no fake 82).
-   * - DNP / min<=0 / missing → null (never 0).
-   * - Solid line across adjacent played points; dashed connector across null gaps.
+   * Line chart consistency (Option B):
+   * - Regular scopes: X domain always 1–82 (pad nulls).
+   * - playoff_only: X domain always 1–28 (pad nulls; not real-length-only, not fake 82).
+   * - DNP / not-reached / min<=0 / missing → null (never 0).
+   * - Solid across adjacent played; dashed connectors across null gaps.
    */
+  const REG_X_MAX = 82;
+  const PLAYOFF_X_MAX = 28;
+
   const chartData = useMemo(() => {
     const bySeason = new Map<string, GameRow[]>();
     for (const g of games) {
@@ -640,7 +644,6 @@ function PlayerExplorerInner() {
       }
       list.push(g);
     }
-    let maxN = 0;
     const indexed = new Map<string, Map<number, GameRow>>();
     for (const season of chartSeasons) {
       const list = (bySeason.get(season) ?? [])
@@ -655,21 +658,17 @@ function PlayerExplorerInner() {
         m.set(i + 1, g);
       });
       indexed.set(season, m);
-      if (list.length > maxN) maxN = list.length;
     }
-    // Reg season / reg+playoffs: fixed shared domain 1–82 (extend if series longer).
-    // Playoffs only: real playoff game index — never force 82.
+    // Fixed shared domains for multi-player overlay alignment.
     const xMax =
-      chartScope === "playoff_only"
-        ? Math.max(maxN, 1)
-        : Math.max(82, maxN);
+      chartScope === "playoff_only" ? PLAYOFF_X_MAX : REG_X_MAX;
     const rows: Record<string, string | number | null>[] = [];
     for (let game_num = 1; game_num <= xMax; game_num++) {
       const row: Record<string, string | number | null> = { game_num };
       for (const season of chartSeasons) {
         const g = indexed.get(season)?.get(game_num);
         if (!g || !(g.min > 0)) {
-          // DNP / not played / missing → null (never 0)
+          // DNP / not-reached / missing → null (never 0)
           row[season] = null;
           row[`date_${season}`] = g ? g.game_date : null;
           row[`dnp_${season}`] = g && !(g.min > 0) ? 1 : null;
@@ -685,11 +684,8 @@ function PlayerExplorerInner() {
   }, [games, chartSeasons, chartScope, stat]);
 
   const xDomainMax = useMemo(() => {
-    if (chartScope === "playoff_only") {
-      return Math.max(chartData.length, 1);
-    }
-    return 82;
-  }, [chartScope, chartData.length]);
+    return chartScope === "playoff_only" ? PLAYOFF_X_MAX : REG_X_MAX;
+  }, [chartScope]);
 
   const radarData = useMemo(() => {
     return STAT_OPTIONS.map((opt) => {
@@ -986,7 +982,7 @@ function PlayerExplorerInner() {
                 : `${games.length} games loaded`}{" "}
               · x-axis <code>game_num</code>
               {chartScope === "playoff_only"
-                ? " (playoffs: real 1…N, no fake 82)"
+                ? " (playoffs: fixed 1–28; DNP/not-reached = null; dashed gaps)"
                 : " (regular: fixed 1–82; DNP/missing = null; dashed gaps)"}{" "}
               · counting stats are per-game; FG%/FT% are single-game rates
             </p>
