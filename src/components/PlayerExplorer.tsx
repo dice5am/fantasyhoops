@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CartesianGrid,
@@ -42,11 +42,10 @@ import {
   type RecentPlayer,
 } from "@/lib/recentPlayers";
 import {
-  getTeamColors,
-  hexToHue,
-  primaryTeamForSeason,
+  FALLBACK_CHART_STROKE,
+  displayTeamChartPrimary,
   primaryTeamRecent,
-  type TeamAbbr,
+  seasonTeamStrokeColors,
 } from "@/lib/teamColors";
 
 type PlayerHit = { player_id: string; full_name: string };
@@ -95,40 +94,7 @@ const STAT_OPTIONS: { key: StatKey; label: string; pct?: boolean }[] = [
   { key: "tov", label: "TOV" },
 ];
 
-/**
- * Season strokes from **team primary** hue (prep multi-player: different teams =
- * different hues). Newest selected season brightest; older dimmer.
- */
-function seasonStrokeColors(
-  teamBySeason: Partial<Record<SeasonId, TeamAbbr | null>>,
-  seasons: SeasonId[],
-  fallbackTeam: TeamAbbr | null
-): Record<string, string> {
-  const sorted = [...seasons].sort();
-  const n = sorted.length;
-  const out: Record<string, string> = {};
-  sorted.forEach((season, idxFromOldest) => {
-    const abbr = teamBySeason[season] ?? fallbackTeam;
-    const token = getTeamColors(abbr);
-    const hex = token?.chartPrimary ?? "#38bdf8";
-    const hue = hexToHue(hex);
-    const rankFromNewest = n - 1 - idxFromOldest;
-    let light: number;
-    let alpha: number;
-    if (n <= 1) {
-      light = 58;
-      alpha = 1;
-    } else if (n === 2) {
-      light = rankFromNewest === 0 ? 60 : 42;
-      alpha = rankFromNewest === 0 ? 1 : 0.72;
-    } else {
-      light = rankFromNewest === 0 ? 62 : rankFromNewest === 1 ? 48 : 36;
-      alpha = rankFromNewest === 0 ? 1 : rankFromNewest === 1 ? 0.78 : 0.55;
-    }
-    out[season] = `hsla(${Math.round(hue)}, 88%, ${light}%, ${alpha})`;
-  });
-  return out;
-}
+/** Season strokes: team chartPrimary + brightness-by-recency (see teamColors). */
 
 /** Fixed fantasy ranges for radar (0–100 display). TOV is inverted. */
 const RADAR_RANGES: Record<
@@ -773,22 +739,17 @@ function PlayerExplorerInner() {
     });
   }, [avgBySeason, chartSeasons]);
 
-  const teamBySeason = useMemo(() => {
-    const out: Partial<Record<SeasonId, TeamAbbr | null>> = {};
-    for (const s of chartSeasons) {
-      out[s] = primaryTeamForSeason(games, s);
-    }
-    return out;
-  }, [games, chartSeasons]);
+  /** Most recent season's primary team (display / recent accents). */
+  const displayTeam = useMemo(() => primaryTeamRecent(games), [games]);
 
-  const displayTeam = useMemo(
-    () => primaryTeamRecent(games) ?? teamBySeason[chartSeasons.slice().sort().at(-1) as SeasonId] ?? null,
-    [games, teamBySeason, chartSeasons]
+  const displayTeamAccent = useMemo(
+    () => displayTeamChartPrimary(games) ?? FALLBACK_CHART_STROKE,
+    [games]
   );
 
   const seasonColors = useMemo(
-    () => seasonStrokeColors(teamBySeason, chartSeasons, displayTeam),
-    [teamBySeason, chartSeasons, displayTeam]
+    () => seasonTeamStrokeColors(games, chartSeasons),
+    [games, chartSeasons]
   );
 
   const isPct = STAT_OPTIONS.find((s) => s.key === stat)?.pct === true;
@@ -802,7 +763,14 @@ function PlayerExplorerInner() {
   }
 
   return (
-    <div className={styles.wrap}>
+    <div
+      className={styles.wrap}
+      style={
+        {
+          ["--fh-team-accent" as string]: displayTeamAccent,
+        } as CSSProperties
+      }
+    >
       <div className={styles.glowOrange} aria-hidden />
       <div className={styles.glowCyan} aria-hidden />
       <div className={styles.glowMagenta} aria-hidden />
@@ -862,9 +830,20 @@ function PlayerExplorerInner() {
                     ? ` ${styles.recentChipActive}`
                     : ""
                 }`}
+                style={
+                  selected?.player_id === p.player_id
+                    ? ({
+                        borderColor: displayTeamAccent,
+                        boxShadow: `0 0 12px ${displayTeamAccent}55`,
+                      } as CSSProperties)
+                    : undefined
+                }
                 onClick={() => pickPlayer(p)}
               >
                 {p.full_name}
+                {selected?.player_id === p.player_id && displayTeam
+                  ? ` · ${displayTeam}`
+                  : ""}
               </button>
             ))}
           </div>
@@ -1016,7 +995,8 @@ function PlayerExplorerInner() {
                       labelFormatter={(label, payload) => {
                         const dates = (payload ?? [])
                           .map((p) => {
-                            const season = String(p.dataKey ?? p.name ?? "");
+                            const rawKey = String(p.dataKey ?? p.name ?? "");
+                            const season = rawKey.replace(/__gap$/, "");
                             const row = p.payload as Record<
                               string,
                               string | number | null
@@ -1034,7 +1014,7 @@ function PlayerExplorerInner() {
                       wrapperStyle={{ fontSize: 12, maxWidth: "100%" }}
                     />
                     {chartSeasons.flatMap((s) => {
-                      const stroke = seasonColors[s] || "#38bdf8";
+                      const stroke = seasonColors[s] || FALLBACK_CHART_STROKE;
                       return [
                         <Line
                           key={`${s}-gap`}
@@ -1121,13 +1101,13 @@ function PlayerExplorerInner() {
                             x={x}
                             y={y}
                             textAnchor={textAnchor}
-                            fill={highlighted ? "#fdba74" : "#cbd5e1"}
+                            fill={highlighted ? displayTeamAccent : "#cbd5e1"}
                             fontSize={highlighted ? 13 : 11}
                             fontWeight={highlighted ? 700 : 500}
                             style={{
                               cursor: "pointer",
                               textShadow: highlighted
-                                ? "0 0 10px rgba(249,115,22,0.65)"
+                                ? `0 0 10px ${displayTeamAccent}`
                                 : undefined,
                             }}
                             onClick={() => opt && onStatChange(opt.key)}
@@ -1148,8 +1128,8 @@ function PlayerExplorerInner() {
                         key={s}
                         name={s}
                         dataKey={s}
-                        stroke={seasonColors[s] || "#38bdf8"}
-                        fill={seasonColors[s] || "#38bdf8"}
+                        stroke={seasonColors[s] || FALLBACK_CHART_STROKE}
+                        fill={seasonColors[s] || FALLBACK_CHART_STROKE}
                         fillOpacity={0.22}
                         strokeWidth={2}
                         isAnimationActive={false}
@@ -1211,6 +1191,14 @@ function PlayerExplorerInner() {
                       className={`${styles.metricCard}${
                         active ? ` ${styles.metricCardActive}` : ""
                       }`}
+                      style={
+                        active
+                          ? ({
+                              borderColor: displayTeamAccent,
+                              boxShadow: `0 0 0 1px ${displayTeamAccent}55, 0 0 18px ${displayTeamAccent}40`,
+                            } as CSSProperties)
+                          : undefined
+                      }
                       onClick={() => onStatChange(opt.key)}
                       aria-pressed={active}
                     >
@@ -1228,7 +1216,7 @@ function PlayerExplorerInner() {
                               <span
                                 className={styles.metricDot}
                                 style={{
-                                  background: seasonColors[s] || "#38bdf8",
+                                  background: seasonColors[s] || FALLBACK_CHART_STROKE,
                                 }}
                                 aria-hidden
                               />

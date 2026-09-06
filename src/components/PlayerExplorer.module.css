@@ -412,10 +412,10 @@
 }
 
 .metricCardActive {
-  border-color: rgba(253, 186, 116, 0.85);
+  border-color: rgba(77, 225, 255, 0.85);
   background: rgba(56, 189, 248, 0.16);
   box-shadow:
-    0 0 0 1px rgba(253, 186, 116, 0.35),
+    0 0 0 1px rgba(77, 225, 255, 0.35),
     0 0 18px rgba(56, 189, 248, 0.25);
 }
 

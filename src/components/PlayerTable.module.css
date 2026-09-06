@@ -315,7 +315,7 @@
 .playerLink {
   color: var(--fh-accent);
   text-decoration: underline;
-  text-decoration-color: rgba(253, 186, 116, 0.35);
+  text-decoration-color: rgba(77, 225, 255, 0.35);
   text-underline-offset: 0.18em;
   cursor: pointer;
   font-weight: 650;
