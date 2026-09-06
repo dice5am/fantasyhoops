@@ -874,3 +874,48 @@
     margin-bottom: 0.75rem;
   }
 }
+
+
+/* ~375px: prevent control/chart clipping; overflow-x only on intentional scrollers */
+@media (max-width: 400px) {
+  .wrap {
+    padding: 0.5rem 0.5rem 2rem;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  .header,
+  .controls,
+  .chartControls,
+  .panel {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .seg {
+    width: 100%;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .seg button {
+    min-height: 44px;
+    min-width: 44px;
+    flex: 1 1 auto;
+  }
+  .searchWrap {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .chartBox,
+  .radarBox {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+  .title {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}

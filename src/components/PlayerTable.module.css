@@ -697,3 +697,42 @@
     font-size: 0.72rem;
   }
 }
+
+
+@media (max-width: 400px) {
+  .wrap {
+    max-width: 100%;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .controls {
+    width: 100%;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .seg {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .seg button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .tableScroll {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  .compact .player,
+  .compact .table thead th:first-child,
+  .compact .table tbody td.player {
+    min-width: 4.75rem;
+    max-width: 5.75rem;
+  }
+  .compact .playerLink {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
