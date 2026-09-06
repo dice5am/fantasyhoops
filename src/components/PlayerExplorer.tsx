@@ -266,9 +266,17 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
       });
       if (href === curHref) return;
       urlWriteLock.current = true;
+      const y = typeof window !== "undefined" ? window.scrollY : 0;
+      window.history.replaceState(window.history.state, "", href);
       router.replace(href, { scroll: false });
+      const restore = () => window.scrollTo(0, y);
+      requestAnimationFrame(() => {
+        restore();
+        requestAnimationFrame(restore);
+      });
       window.setTimeout(() => {
         urlWriteLock.current = false;
+        restore();
       }, 0);
     },
     [selected, chartSeasons, chartScope, stat, searchParams, router]

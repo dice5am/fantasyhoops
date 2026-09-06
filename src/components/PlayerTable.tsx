@@ -232,20 +232,16 @@ export function PlayerTable({
     params.set("player_id", String(row.player_id));
     if (row.full_name) params.set("name", row.full_name);
     if (selectInPlace) {
-      // Preserve season/scope on player hub — avoid remount scroll jump
       params.set("season", season);
       const s = scope === "reg_plus_playoffs" ? "reg_only" : scope;
       params.set("scope", s);
       const y = window.scrollY;
-      window.history.replaceState(
-        window.history.state,
-        "",
-        `/player?${params.toString()}`
-      );
-      requestAnimationFrame(() => window.scrollTo(0, y));
-      // Soft-notify Next of URL change for searchParams consumers without full nav
       router.replace(`/player?${params.toString()}`, { scroll: false });
-      requestAnimationFrame(() => window.scrollTo(0, y));
+      const restore = () => window.scrollTo(0, y);
+      requestAnimationFrame(() => {
+        restore();
+        requestAnimationFrame(restore);
+      });
       return;
     }
     router.push(`/player?${params.toString()}`);

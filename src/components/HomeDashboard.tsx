@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Bar,
   BarChart,
@@ -126,7 +125,6 @@ export function HomeDashboard({
   scope: initialScope,
   topPct: initialTopPct,
 }: Props) {
-  const router = useRouter();
   const [context, setContext] = useState(initialContext);
   const [season, setSeason] = useState(initialSeason);
   const [scope, setScope] = useState(initialScope);
@@ -160,12 +158,16 @@ export function HomeDashboard({
       setSeason(nextSeason);
       setScope(s);
       setTopPct(pct);
-      // router.replace + scroll:false — no scroll jump; client fetch avoids remount flash
+      // history.replaceState + client-fetch: no App Router remount / scroll jump
       const params = new URLSearchParams();
       params.set("season", nextSeason);
       params.set("scope", s);
       params.set("topPct", String(pct));
-      router.replace(`/?${params.toString()}`, { scroll: false });
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `/?${params.toString()}`
+      );
 
       const gen = ++fetchGen.current;
       setLoading(true);
@@ -185,7 +187,7 @@ export function HomeDashboard({
         if (gen === fetchGen.current) setLoading(false);
       }
     },
-    [router]
+    []
   );
 
   const uiScope: "reg_only" | "playoff_only" =
