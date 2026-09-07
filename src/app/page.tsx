@@ -1,5 +1,6 @@
 import { HomeDashboard } from "@/components/HomeDashboard";
 import { getLeagueContext } from "@/lib/loadMart";
+import { getFantasyScores } from "@/lib/loadFantasyScores";
 import { parseScope, parseSeason } from "@/lib/scope";
 import { parseTopPct } from "@/lib/top250";
 
@@ -28,11 +29,19 @@ export default async function Home({
       : sp.universe != null && sp.universe !== ""
         ? 100
         : parseTopPct(undefined);
-  const context = await getLeagueContext({
-    season,
-    season_type_scope: scope,
-    topPct,
-  });
+
+  const [context, fantasy] = await Promise.all([
+    getLeagueContext({
+      season,
+      season_type_scope: scope,
+      topPct,
+    }),
+    getFantasyScores({
+      season,
+      season_type_scope: scope,
+      topPct,
+    }).catch(() => null),
+  ]);
 
   return (
     <HomeDashboard
@@ -40,6 +49,7 @@ export default async function Home({
       season={season}
       scope={scope}
       topPct={topPct}
+      initialFantasy={fantasy}
     />
   );
 }

@@ -1,31 +1,39 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Bar,
   BarChart,
+  Cell,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
   Radar,
   RadarChart,
   ResponsiveContainer,
+  Scatter,
+  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
+  ZAxis,
 } from "recharts";
 import { formatAvg, formatPct } from "@/lib/format";
-import type { LeagueContextPayload, LeaderEntry } from "@/lib/leagueAggregates";
+import type { LeagueContextPayload } from "@/lib/leagueAggregates";
 import {
   RADAR_NORM_NOTE,
   RADAR_SPOKE_ORDER,
   STAT_LABEL,
   STAT_OPTIONS,
-  TRIPTYCH,
   normalizeRadarValue,
   type RadarStatKey,
 } from "@/lib/radar";
+import type {
+  FantasyScoresPayload,
+  PlayerFantasyScore,
+  ScoreBoardKey,
+} from "@/types/fantasy_score";
 import type { SeasonTypeScope } from "@/types/season_player_averages";
 import { SCOPE_OPTIONS, SEASON_OPTIONS } from "@/types/season_player_averages";
 import {
@@ -42,6 +50,7 @@ type Props = {
   season: string;
   scope: SeasonTypeScope;
   topPct: number;
+  initialFantasy?: FantasyScoresPayload | null;
 };
 
 function fmtStat(key: RadarStatKey, v: number | null | undefined): string {
@@ -50,71 +59,68 @@ function fmtStat(key: RadarStatKey, v: number | null | undefined): string {
   return formatAvg(v);
 }
 
-function LeaderList({
-  leaders,
-  stat,
-}: {
-  leaders: LeaderEntry[];
-  stat: RadarStatKey;
-}) {
-  if (!leaders.length) {
-    return <p className={styles.emptyLeaders}>No leaders yet</p>;
-  }
-  return (
-    <ol className={styles.leaderList}>
-      {leaders.map((L, i) => (
-        <li key={L.player_id}>
-          <Link
-            href={`/player?player_id=${encodeURIComponent(L.player_id)}&name=${encodeURIComponent(L.full_name)}`}
-            className={styles.leaderLink}
-            style={{ ["--leader-color" as string]: L.chart_color }}
-          >
-            <span className={styles.leaderRank}>{i + 1}</span>
-            <span
-              className={styles.leaderDot}
-              style={{ background: L.chart_color }}
-              aria-hidden
-            />
-            <span className={styles.leaderName}>{L.full_name}</span>
-            <span className={styles.leaderVal}>{fmtStat(stat, L.value)}</span>
-          </Link>
-        </li>
-      ))}
-    </ol>
-  );
+function fmtScore(v: number | null | undefined): string {
+  if (v == null || Number.isNaN(Number(v))) return "—";
+  return Number(v).toFixed(1);
 }
 
-function TriptychPanel({
+const BOARD_META: {
+  key: ScoreBoardKey;
+  title: string;
+  score: (r: PlayerFantasyScore) => number;
+  rank: (r: PlayerFantasyScore) => number;
+}[] = [
+  { key: "o1", title: "Overall · O1", score: (r) => r.score_o1, rank: (r) => r.rank_o1 },
+  { key: "off", title: "OFF", score: (r) => r.score_off, rank: (r) => r.rank_off },
+  { key: "def", title: "DEF", score: (r) => r.score_def, rank: (r) => r.rank_def },
+  { key: "eff", title: "EFF", score: (r) => r.score_eff, rank: (r) => r.rank_eff },
+];
+
+const BOARD_TOP_N = 8;
+
+function CondensedScoreBoard({
   title,
-  keys,
-  leagueAvgs,
-  leaders,
+  rows,
+  scoreOf,
+  rankOf,
 }: {
   title: string;
-  keys: readonly RadarStatKey[];
-  leagueAvgs: LeagueContextPayload["league_avgs"];
-  leaders: LeagueContextPayload["leaders"];
+  rows: PlayerFantasyScore[];
+  scoreOf: (r: PlayerFantasyScore) => number;
+  rankOf: (r: PlayerFantasyScore) => number;
 }) {
+  const top = useMemo(() => {
+    return [...rows]
+      .sort((a, b) => rankOf(a) - rankOf(b))
+      .slice(0, BOARD_TOP_N);
+  }, [rows, rankOf]);
+
   return (
-    <section className={styles.triPanel} aria-label={title}>
+    <section className={styles.scorePanelCompact} aria-label={title}>
       <h2 className={styles.triTitle}>{title}</h2>
-      <div className={styles.chipRow}>
-        {keys.map((k) => (
-          <div key={k} className={styles.chip}>
-            <span className={styles.chipLabel}>{STAT_LABEL[k]}</span>
-            <span className={styles.chipVal}>{fmtStat(k, leagueAvgs[k])}</span>
-          </div>
-        ))}
-      </div>
-      {keys.map((k) => (
-        <div key={k} className={styles.leaderBlock}>
-          <h3 className={styles.leaderHeading}>
-            Top {STAT_LABEL[k]}
-            {k === "tov" ? " (low)" : ""}
-          </h3>
-          <LeaderList leaders={leaders[k] ?? []} stat={k} />
-        </div>
-      ))}
+      {top.length === 0 ? (
+        <p className={styles.emptyLeaders}>No scores yet</p>
+      ) : (
+        <ol className={styles.leaderList}>
+          {top.map((r) => (
+            <li key={`${title}-${r.player_id}`}>
+              <Link
+                href={`/player?player_id=${encodeURIComponent(r.player_id)}&name=${encodeURIComponent(r.full_name)}`}
+                className={styles.leaderLink}
+              >
+                <span className={styles.leaderRank}>{rankOf(r)}</span>
+                <span
+                  className={styles.leaderDot}
+                  style={{ background: "rgba(212, 184, 150, 0.85)" }}
+                  aria-hidden
+                />
+                <span className={styles.leaderName}>{r.full_name}</span>
+                <span className={styles.leaderVal}>{fmtScore(scoreOf(r))}</span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }
@@ -124,6 +130,7 @@ export function HomeDashboard({
   season: initialSeason,
   scope: initialScope,
   topPct: initialTopPct,
+  initialFantasy = null,
 }: Props) {
   const [context, setContext] = useState(initialContext);
   const [season, setSeason] = useState(initialSeason);
@@ -132,11 +139,33 @@ export function HomeDashboard({
     Number.isFinite(initialTopPct) ? initialTopPct : DEFAULT_TOP_PCT
   );
   const [loading, setLoading] = useState(false);
+  const [fantasy, setFantasy] = useState<FantasyScoresPayload | null>(
+    initialFantasy
+  );
+  const [fantasyStatus, setFantasyStatus] = useState<
+    "loading" | "awaiting" | "ready" | "error"
+  >(
+    initialFantasy?.meta?.mart_available && initialFantasy.rows.length > 0
+      ? "ready"
+      : "loading"
+  );
   const fetchGen = useRef(0);
 
   const radarData = useMemo(() => {
+    const avgs = fantasy?.pool_avgs;
+    const source = avgs ?? {
+      pts: context.league_avgs.pts,
+      ast: context.league_avgs.ast,
+      fg3m: context.league_avgs.fg3m,
+      reb: context.league_avgs.reb,
+      stl: context.league_avgs.stl,
+      blk: context.league_avgs.blk,
+      fg_pct: context.league_avgs.fg_pct,
+      ft_pct: context.league_avgs.ft_pct,
+      tov: context.league_avgs.tov,
+    };
     return RADAR_SPOKE_ORDER.map((key) => {
-      const raw = context.league_avgs[key];
+      const raw = source[key];
       const opt = STAT_OPTIONS.find((s) => s.key === key);
       return {
         stat: opt?.label ?? key,
@@ -145,7 +174,74 @@ export function HomeDashboard({
         raw,
       };
     });
-  }, [context.league_avgs]);
+  }, [fantasy?.pool_avgs, context.league_avgs]);
+
+  const scatterData = useMemo(() => {
+    if (!fantasy?.rows.length) return [];
+    return fantasy.rows.map((r) => ({
+      player_id: r.player_id,
+      name: r.full_name,
+      off: r.score_off,
+      def: r.score_def,
+      min: r.avg_min,
+    }));
+  }, [fantasy]);
+
+  const fetchFantasyScores = useCallback(
+    async (
+      nextSeason: string,
+      nextScope: SeasonTypeScope,
+      nextTopPct: number,
+      gen: number
+    ) => {
+      try {
+        const qs = new URLSearchParams();
+        qs.set("season", nextSeason);
+        qs.set("scope", nextScope);
+        qs.set("topPct", String(nextTopPct));
+        const res = await fetch(`/api/fantasy-scores?${qs.toString()}`);
+        if (gen !== fetchGen.current) return;
+        if (res.status === 503) {
+          setFantasy(null);
+          setFantasyStatus("awaiting");
+          return;
+        }
+        if (!res.ok) {
+          setFantasy(null);
+          setFantasyStatus("error");
+          return;
+        }
+        const data = (await res.json()) as FantasyScoresPayload;
+        if (gen !== fetchGen.current) return;
+        if (!data.meta?.mart_available) {
+          setFantasy(data);
+          setFantasyStatus("awaiting");
+          return;
+        }
+        setFantasy(data);
+        setFantasyStatus("ready");
+      } catch {
+        if (gen !== fetchGen.current) return;
+        setFantasy(null);
+        setFantasyStatus("error");
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (initialFantasy?.meta?.mart_available && initialFantasy.rows.length > 0) {
+      return;
+    }
+    const gen = ++fetchGen.current;
+    void fetchFantasyScores(
+      initialSeason,
+      initialScope === "reg_plus_playoffs" ? "reg_only" : initialScope,
+      Number.isFinite(initialTopPct) ? initialTopPct : DEFAULT_TOP_PCT,
+      gen
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const applyFilters = useCallback(
     async (
@@ -158,7 +254,6 @@ export function HomeDashboard({
       setSeason(nextSeason);
       setScope(s);
       setTopPct(pct);
-      // history.replaceState + client-fetch: no App Router remount / scroll jump
       const params = new URLSearchParams();
       params.set("season", nextSeason);
       params.set("scope", s);
@@ -171,29 +266,34 @@ export function HomeDashboard({
 
       const gen = ++fetchGen.current;
       setLoading(true);
+      setFantasyStatus("loading");
       try {
         const qs = new URLSearchParams();
         qs.set("season", nextSeason);
         qs.set("scope", s);
         qs.set("topPct", String(pct));
-        const res = await fetch(`/api/league-context?${qs.toString()}`);
-        if (!res.ok) throw new Error(`league-context ${res.status}`);
-        const data = (await res.json()) as LeagueContextPayload;
+        const [leagueRes] = await Promise.all([
+          fetch(`/api/league-context?${qs.toString()}`),
+          fetchFantasyScores(nextSeason, s, pct, gen),
+        ]);
+        if (!leagueRes.ok) throw new Error(`league-context ${leagueRes.status}`);
+        const data = (await leagueRes.json()) as LeagueContextPayload;
         if (gen !== fetchGen.current) return;
         setContext(data);
       } catch {
-        // Keep prior context on failure; URL already reflects requested filters.
+        // keep prior
       } finally {
         if (gen === fetchGen.current) setLoading(false);
       }
     },
-    []
+    [fetchFantasyScores]
   );
 
   const uiScope: "reg_only" | "playoff_only" =
     scope === "playoff_only" ? "playoff_only" : "reg_only";
-
   const pct = Number.isFinite(topPct) ? topPct : DEFAULT_TOP_PCT;
+  const scoresReady = fantasyStatus === "ready" && fantasy && fantasy.rows.length > 0;
+  const rows = fantasy?.rows ?? [];
 
   return (
     <div className={styles.wrap} data-loading={loading ? "1" : "0"}>
@@ -204,7 +304,7 @@ export function HomeDashboard({
         <div>
           <h1 className={styles.title}>FantasyHoops</h1>
           <p className={styles.subtitle}>
-            League pulse · Hybrid A1+A3 · accurate mart aggregates
+            Score-ranked boards · OFF/DEF/EFF/O1 · Data mart
           </p>
         </div>
         <div className={styles.controls}>
@@ -234,7 +334,10 @@ export function HomeDashboard({
           </div>
           <label className={styles.topPctControl}>
             <span className={styles.topPctLabel}>
-              {topPctLabel(pct, context.player_count)}
+              {topPctLabel(
+                pct,
+                fantasy?.meta.player_count ?? context.player_count
+              )}
             </span>
             <input
               type="range"
@@ -253,161 +356,285 @@ export function HomeDashboard({
       </header>
 
       <p className={styles.meta}>
-        {context.player_count} players · season <code>{season}</code> · scope{" "}
-        <code>{uiScope}</code> · topPct <code>{pct}</code>
+        {fantasy?.meta.player_count ?? context.player_count} players · season{" "}
+        <code>{season}</code> · scope <code>{uiScope}</code> · topPct{" "}
+        <code>{pct}</code>
+        {fantasy?.meta.rescored ? (
+          <>
+            {" · "}
+            <code>rescored</code>
+          </>
+        ) : null}
         {" · "}
         <Link href="/player" className={styles.metaLink}>
           Browse players →
         </Link>
       </p>
 
-      {/* Hero: league-avg 9-cat radar */}
-      <section className={styles.hero} aria-label="League average 9-cat radar">
-        <div className={styles.heroCopy}>
-          <h2 className={styles.panelTitle}>League average · 9-cat</h2>
-          <p className={styles.panelSub}>
-            Same RADAR_RANGES / spoke order / normalizeRadarValue as Player.
-            Counting stats GP-weighted; FG%/FT% = Σ made / Σ att; 3PM = GP-weighted{" "}
-            <code>avg_fg3m</code> only.
-          </p>
-          <div className={styles.avgGrid}>
-            {RADAR_SPOKE_ORDER.map((k) => (
-              <div key={k} className={styles.avgCell}>
-                <span className={styles.avgLabel}>{STAT_LABEL[k]}</span>
-                <span className={styles.avgVal}>
-                  {fmtStat(k, context.league_avgs[k])}
-                </span>
-              </div>
+      {/* Condensed O1 / OFF / DEF / EFF boards */}
+      <div className={styles.scoreBoards} aria-label="Fantasy score boards">
+        {scoresReady
+          ? BOARD_META.map((b) => (
+              <CondensedScoreBoard
+                key={b.key}
+                title={b.title}
+                rows={rows}
+                scoreOf={b.score}
+                rankOf={b.rank}
+              />
+            ))
+          : BOARD_META.map((b) => (
+              <section
+                key={b.key}
+                className={styles.scorePanelCompact}
+                aria-label={b.title}
+                data-awaiting="1"
+              >
+                <h2 className={styles.triTitle}>{b.title}</h2>
+                <div className={styles.awaitingBox}>
+                  <p className={styles.awaitingTitle}>
+                    {fantasyStatus === "loading"
+                      ? "Loading scores…"
+                      : "Awaiting score mart"}
+                  </p>
+                  <p className={styles.awaitingBody}>
+                    Condensed {b.title} board — Data scores only.
+                  </p>
+                </div>
+              </section>
             ))}
-          </div>
-        </div>
-        <div className={styles.radarBox}>
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="68%">
-              <PolarGrid stroke="rgba(212, 184, 150, 0.18)" />
-              <PolarAngleAxis
-                dataKey="stat"
-                tick={{ fill: "#c9b8a0", fontSize: 11 }}
-              />
-              <PolarRadiusAxis
-                angle={90}
-                domain={[0, 100]}
-                tick={false}
-                axisLine={false}
-              />
-              <Radar
-                name="League"
-                dataKey="league"
-                stroke="rgba(212, 184, 150, 0.95)"
-                fill="rgba(212, 184, 150, 0.28)"
-                fillOpacity={0.55}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "rgba(22, 22, 24, 0.92)",
-                  border: "1px solid rgba(212, 184, 150, 0.35)",
-                  borderRadius: 8,
-                  color: "#f2ebe3",
-                }}
-                formatter={(value: number | string, _n, item) => {
-                  const key = (item?.payload as { key?: RadarStatKey })?.key;
-                  const raw = (item?.payload as { raw?: number | null })?.raw;
-                  if (key) return [fmtStat(key, raw ?? null), STAT_LABEL[key]];
-                  return [value, "League"];
-                }}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-        <p className={styles.normNote}>{RADAR_NORM_NOTE}</p>
-      </section>
-
-      {/* Triptych OFF / DEF / EFF */}
-      <div className={styles.triptych}>
-        <TriptychPanel
-          title="OFF"
-          keys={TRIPTYCH.OFF}
-          leagueAvgs={context.league_avgs}
-          leaders={context.leaders}
-        />
-        <TriptychPanel
-          title="DEF"
-          keys={TRIPTYCH.DEF}
-          leagueAvgs={context.league_avgs}
-          leaders={context.leaders}
-        />
-        <TriptychPanel
-          title="EFF"
-          keys={TRIPTYCH.EFF}
-          leagueAvgs={context.league_avgs}
-          leaders={context.leaders}
-        />
       </div>
 
-      {/* Footer: FG% hist + stocks */}
-      <section className={styles.footer} aria-label="FG% histogram and stocks leaders">
-        <div className={styles.footerPanel}>
-          <h2 className={styles.panelTitle}>FG% distribution</h2>
+      {/* Distributions */}
+      <div className={styles.scoreViz} aria-label="Fantasy score distributions">
+        <section className={styles.scorePanel} aria-label="Overall histogram">
+          <h2 className={styles.panelTitle}>Overall · O1 distribution</h2>
           <p className={styles.panelSub}>
-            Players with GP ≥ 10 · bins 30–70% · not strength of schedule
+            Active pool O1 scores · {fantasy?.meta.rescored ? "rescored for topPct" : "published mart"}
           </p>
           <div className={styles.histBox}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={context.fg_pct_hist}>
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: "#a89880", fontSize: 10 }}
-                  interval={0}
-                  angle={-25}
-                  textAnchor="end"
-                  height={48}
-                />
-                <YAxis tick={{ fill: "#a89880", fontSize: 11 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(22, 22, 24, 0.92)",
-                    border: "1px solid rgba(212, 184, 150, 0.35)",
-                    borderRadius: 8,
-                    color: "#f2ebe3",
-                  }}
-                />
-                <Bar
-                  dataKey="count"
-                  name="Players"
-                  fill="rgba(212, 184, 150, 0.75)"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div className={styles.footerPanel}>
-          <h2 className={styles.panelTitle}>Stocks leaders</h2>
-          <p className={styles.panelSub}>
-            STL + BLK (per-game) · GP ≥ 10 · team chart colors
-          </p>
-          <ol className={styles.leaderList}>
-            {context.stocks_leaders.map((L, i) => (
-              <li key={L.player_id}>
-                <Link
-                  href={`/player?player_id=${encodeURIComponent(L.player_id)}&name=${encodeURIComponent(L.full_name)}`}
-                  className={styles.leaderLink}
-                  style={{ ["--leader-color" as string]: L.chart_color }}
-                >
-                  <span className={styles.leaderRank}>{i + 1}</span>
-                  <span
-                    className={styles.leaderDot}
-                    style={{ background: L.chart_color }}
-                    aria-hidden
+            {scoresReady ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fantasy!.o1_hist}>
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: "#a89880", fontSize: 10 }}
+                    interval={0}
+                    angle={-20}
+                    textAnchor="end"
+                    height={42}
                   />
-                  <span className={styles.leaderName}>{L.full_name}</span>
-                  <span className={styles.leaderVal}>{formatAvg(L.value)}</span>
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+                  <YAxis
+                    tick={{ fill: "#a89880", fontSize: 11 }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(22, 22, 24, 0.92)",
+                      border: "1px solid rgba(212, 184, 150, 0.35)",
+                      borderRadius: 8,
+                      color: "#f2ebe3",
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    name="Players"
+                    fill="rgba(212, 184, 150, 0.75)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className={styles.awaitingBox}>
+                <p className={styles.awaitingTitle}>Awaiting O1 hist</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className={styles.scorePanel} aria-label="OFF vs DEF scatter">
+          <h2 className={styles.panelTitle}>OFF vs DEF</h2>
+          <p className={styles.panelSub}>
+            Scatter · point size = avg_min · Data pillar scores
+          </p>
+          <div className={styles.histBox}>
+            {scoresReady ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+                  <XAxis
+                    type="number"
+                    dataKey="off"
+                    name="OFF"
+                    domain={[0, 100]}
+                    tick={{ fill: "#a89880", fontSize: 10 }}
+                    label={{
+                      value: "OFF",
+                      position: "insideBottom",
+                      offset: -2,
+                      fill: "#a89880",
+                      fontSize: 10,
+                    }}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey="def"
+                    name="DEF"
+                    domain={[0, 100]}
+                    tick={{ fill: "#a89880", fontSize: 10 }}
+                    label={{
+                      value: "DEF",
+                      angle: -90,
+                      position: "insideLeft",
+                      fill: "#a89880",
+                      fontSize: 10,
+                    }}
+                  />
+                  <ZAxis type="number" dataKey="min" range={[30, 220]} name="MIN" />
+                  <Tooltip
+                    cursor={{ strokeDasharray: "3 3" }}
+                    contentStyle={{
+                      background: "rgba(22, 22, 24, 0.92)",
+                      border: "1px solid rgba(212, 184, 150, 0.35)",
+                      borderRadius: 8,
+                      color: "#f2ebe3",
+                    }}
+                    formatter={(value: number, name: string) => [
+                      typeof value === "number" ? value.toFixed(1) : value,
+                      name,
+                    ]}
+                    labelFormatter={(_, payload) => {
+                      const p = payload?.[0]?.payload as
+                        | { name?: string }
+                        | undefined;
+                      return p?.name ?? "";
+                    }}
+                  />
+                  <Scatter name="Players" data={scatterData} fill="rgba(212, 184, 150, 0.7)">
+                    {scatterData.map((d) => (
+                      <Cell
+                        key={d.player_id}
+                        fill="rgba(212, 184, 150, 0.65)"
+                      />
+                    ))}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className={styles.awaitingBox}>
+                <p className={styles.awaitingTitle}>Awaiting OFF×DEF</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className={styles.scorePanel} aria-label="EFF histogram">
+          <h2 className={styles.panelTitle}>EFF distribution</h2>
+          <p className={styles.panelSub}>EFF = mean(FG F1, FT F1, TOV T1)</p>
+          <div className={styles.histBox}>
+            {scoresReady ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={fantasy!.eff_hist}>
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: "#a89880", fontSize: 10 }}
+                    interval={0}
+                    angle={-20}
+                    textAnchor="end"
+                    height={42}
+                  />
+                  <YAxis
+                    tick={{ fill: "#a89880", fontSize: 11 }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(22, 22, 24, 0.92)",
+                      border: "1px solid rgba(212, 184, 150, 0.35)",
+                      borderRadius: 8,
+                      color: "#f2ebe3",
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    name="Players"
+                    fill="rgba(180, 160, 130, 0.8)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className={styles.awaitingBox}>
+                <p className={styles.awaitingTitle}>Awaiting EFF hist</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className={styles.scorePanel} aria-label="Pool average radar">
+          <h2 className={styles.panelTitle}>Pool average · 9-cat</h2>
+          <p className={styles.panelSub}>
+            GP-weighted pool avgs for active topPct slice · same radar ranges as Player
+          </p>
+          <div className={styles.radarBox} style={{ height: 240, minHeight: 220 }}>
+            {scoresReady || context.player_count > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="68%">
+                  <PolarGrid stroke="rgba(212, 184, 150, 0.18)" />
+                  <PolarAngleAxis
+                    dataKey="stat"
+                    tick={{ fill: "#c9b8a0", fontSize: 11 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={90}
+                    domain={[0, 100]}
+                    tick={false}
+                    axisLine={false}
+                  />
+                  <Radar
+                    name="Pool"
+                    dataKey="league"
+                    stroke="rgba(212, 184, 150, 0.95)"
+                    fill="rgba(212, 184, 150, 0.28)"
+                    fillOpacity={0.55}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "rgba(22, 22, 24, 0.92)",
+                      border: "1px solid rgba(212, 184, 150, 0.35)",
+                      borderRadius: 8,
+                      color: "#f2ebe3",
+                    }}
+                    formatter={(value: number | string, _n, item) => {
+                      const key = (item?.payload as { key?: RadarStatKey })?.key;
+                      const raw = (item?.payload as { raw?: number | null })?.raw;
+                      if (key) return [fmtStat(key, raw ?? null), STAT_LABEL[key]];
+                      return [value, "Pool"];
+                    }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className={styles.awaitingBox}>
+                <p className={styles.awaitingTitle}>Awaiting pool radar</p>
+              </div>
+            )}
+          </div>
+          <p className={styles.normNote}>{RADAR_NORM_NOTE}</p>
+        </section>
+      </div>
+
+      {!scoresReady && (
+        <p className={styles.scoreBanner} role="status">
+          Fantasy scores{" "}
+          {fantasyStatus === "loading"
+            ? "loading…"
+            : fantasyStatus === "error"
+              ? "probe error"
+              : "awaiting mart"}{" "}
+          · <code>player_fantasy_scores.parquet</code> ·{" "}
+          <code>fantasy-score-v1</code>
+        </p>
+      )}
     </div>
   );
 }

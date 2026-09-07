@@ -117,3 +117,27 @@ Dark grey + champagne glass tokens in `globals.css` (`--fh-champagne`, `--fh-voi
 ## Charts (Player)
 
 Mid-season gap hold-last in PlayerExplorer must not regress (null ≠ 0; dashed gap path). Explorer imports shared `radar.ts`.
+
+## Fantasy score viz (fantasy-score-v1)
+
+Consume Data mart only — formulas locked in `docs/FANTASY_SCORE.md`.
+
+| Artifact | Path |
+|----------|------|
+| Contract | `docs/FANTASY_SCORE.md` |
+| Parquet | `data/marts/player_fantasy_scores.parquet` |
+| Env | `NBA_FANTASY_SCORE_PATH` |
+| Engine port | `src/lib/fantasyScorePool.ts` (`scorePool`) |
+
+### topPct rescoring (required)
+
+- `topPct=100`: use published mart `score_*` / `rank_*`.
+- `topPct<100`: narrow published pool by `avg_min` (same top-250 order), then **re-run `scorePool`** on raw inputs. Never reuse full-250 ranks after narrowing.
+
+### Home layout
+
+1. Condensed O1 / OFF / DEF / EFF score boards (top 8)
+2. O1 histogram · OFF×DEF scatter (size=`avg_min`) · EFF hist · pool-avg 9-cat radar
+3. Slim topPct + `history.replaceState` (no scroll jump)
+
+API: `GET /api/fantasy-scores?season=&scope=&topPct=`

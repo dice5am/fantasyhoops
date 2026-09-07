@@ -426,6 +426,84 @@
   color: var(--fh-text-dim);
 }
 
+/* --- Fantasy score viz prep (awaiting Data mart) --- */
+
+.scoreBoards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.15rem;
+}
+
+.scoreViz {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.scorePanel,
+.scorePanelCompact {
+  padding: 1rem 0.95rem 1.05rem;
+  border-radius: 16px;
+  background: rgba(26, 26, 28, 0.58);
+  border: 1px solid rgba(212, 184, 150, 0.2);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 245, 230, 0.05);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  min-width: 0;
+}
+
+.scorePanelCompact {
+  min-height: 9.5rem;
+}
+
+.awaitingBox {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 5.5rem;
+  padding: 0.75rem 0.7rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(212, 184, 150, 0.28);
+  background: rgba(14, 14, 16, 0.45);
+}
+
+.awaitingTitle {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fh-champagne);
+}
+
+.awaitingBody {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--fh-text-muted);
+}
+
+.scoreBanner {
+  margin: 0 0 1.15rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #c9b8a0;
+  background: rgba(28, 28, 30, 0.55);
+  border: 1px solid rgba(212, 184, 150, 0.22);
+}
+
+.scoreBanner code {
+  color: var(--fh-champagne);
+  font-size: 0.72rem;
+}
+
 .footer {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
@@ -461,6 +539,14 @@
   }
 
   .triptych {
+    grid-template-columns: 1fr;
+  }
+
+  .scoreBoards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scoreViz {
     grid-template-columns: 1fr;
   }
 
@@ -580,7 +666,19 @@
     margin-bottom: 0.95rem;
   }
 
-  .triPanel {
+  .scoreBoards {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+    margin-bottom: 0.95rem;
+  }
+
+  .scoreViz {
+    gap: 0.7rem;
+  }
+
+  .triPanel,
+  .scorePanel,
+  .scorePanelCompact {
     padding: 0.85rem 0.75rem 0.9rem;
   }
 
