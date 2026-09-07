@@ -13,4 +13,4 @@ Empty premium Insight tab (`/insight`). **No fake articles.**
 - Keep chrome consistent with dark grey + champagne premium glass
 
 ## Status
-Stub only — awaiting editorial / product content.
+Two editorial MD files landed (`fantasy-score-method`, `rank-stability-5yr`) and are awaiting the Dashboard-owned loader.
