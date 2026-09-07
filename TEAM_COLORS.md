@@ -12,13 +12,38 @@ Shared 30-team palette for FantasyHoops charts/UI. Hexes are **not invented** �
 5. **Wikipedia** — team page “Team colors” names + `Module:Sports_color/basketball` hex (display/wiki; prefer brand over wiki when they diverge).  
    https://en.wikipedia.org/wiki/Module:Sports_color/basketball
 
-## Chart contrast note
-Very dark primaries (Brooklyn black, deep navies) use a **lightness-nudged** `chartPrimary` for dark-glass line strokes while **keeping hue**. Accents remain brand hexes. Recency brightness (newest 100% → oldest 50%) still samples hue from `chartPrimary`.
+## Chart UI main (`chartPrimary`) — LOCKED
+**Source of truth:** `/workspace/nba-branding/CHART_UI_MAINS.md` (Cavin lock 2026-09-06).  
+Brand `primary` stays for chips / denser identity fills. **`chartPrimary` is the Chart UI main hex as-is — no invented hexes, no lighten/wash.**
+
+### Wash ban (critical)
+1. Do **not** derive `chartPrimary` via `chartPrimaryFromBrand` lighten — set locked hex in `T(..., chartPrimary)`.
+2. Do **not** recolor identity strokes with `withRecencyBrightness` hsla(88%/58%). `seasonTeamStrokeColors` returns the **exact** `chartPrimary` hex; recency is **opacity-only** (`seasonTeamStrokeOpacities`, 1.0 → 0.5).
+3. Marks UX (no logos): name-adjacent pip + soft glow from the same hex — see `/workspace/nba-branding/TEAM_MARK_UX.md`.
+
+### Locked Chart UI main map
+| Abbr | chartPrimary | Abbr | chartPrimary |
+|------|--------------|------|--------------|
+| ATL | `#E03A3E` | BKN | `#FFFFFF` |
+| BOS | `#007A33` | CHA | `#00788C` |
+| CHI | `#CE1141` | CLE | `#860038` |
+| DAL | `#00538C` | DEN | `#FEC524` |
+| DET | `#C8102E` | GSW | `#FFC72C` |
+| HOU | `#CE1141` | IND | `#FDBB30` |
+| LAC | `#C8102E` | LAL | `#FDB927` |
+| MEM | `#5D76A9` | MIA | `#98002E` |
+| MIL | `#00471B` | MIN | `#78BE20` |
+| NOP | `#85714D` | NYK | `#F58426` |
+| OKC | `#007AC1` | ORL | `#0077C0` |
+| PHI | `#006BB6` | PHX | `#E56020` |
+| POR | `#E03A3E` | SAC | `#5A2D81` |
+| SAS | `#C4CED4` | TOR | `#CE1141` |
+| UTA | `#F9A01B` | WAS | `#E31837` |
 
 ## Resolution rules
 - Per season: `team_abbreviation` with most GP among `min > 0` games that season (ties → lex first abbr).
-- Display / recent accents: most recent season’s primary team.
-- Chart/radar/metric season strokes: **most-recent-team** `chartPrimary` hue (one hue) + brightness lock among selected seasons (newest=100% → oldest=50%, linear middles; up to 5).
+- Display / recent chips: most recent season’s brand `primary`.
+- Chart/radar/metric season strokes + name pips: **most-recent-team** exact `chartPrimary` + opacity-only recency (newest=1.0 → oldest=0.5; up to 5).
 
 ## All 30 teams (primary + accents + citation)
 
@@ -60,4 +85,5 @@ Very dark primaries (Brooklyn black, deep navies) use a **lightness-nudged** `ch
 - **BOS / LAL / GSW / CHI / NYK / OKC / CLE**: matched brand tables above; wiki module differs on BOS (`#008348`), LAL (`#31006F`), NYK (`#1D428A`), UTA (purple era) — brand hexes win.
 - **MIN**: keep Midnight Blue primary (not Aurora Green as primary — green is accent).
 
-Canonical tokens: `src/lib/teamColors.ts`.
+Canonical tokens: `src/lib/teamColors.ts` (`primary` + locked `chartPrimary`).
+Player line Y-axis fixed domains: `src/lib/chartYAxis.ts` (raised ceilings: pts 60, reb 30, …).

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import {
   Bar,
@@ -45,6 +45,8 @@ import {
   TOP_PCT_STEP,
   topPctLabel,
 } from "@/lib/top250";
+import { TeamMarkPip } from "@/components/TeamMarkPip";
+import { FALLBACK_CHART_STROKE } from "@/lib/teamColors";
 import styles from "./HomeDashboard.module.css";
 
 type Props = {
@@ -85,11 +87,13 @@ function CondensedScoreBoard({
   rows,
   scoreOf,
   rankOf,
+  colorByPlayer,
 }: {
   title: string;
   rows: PlayerFantasyScore[];
   scoreOf: (r: PlayerFantasyScore) => number;
   rankOf: (r: PlayerFantasyScore) => number;
+  colorByPlayer?: Map<string, string>;
 }) {
   const top = useMemo(() => {
     return [...rows]
@@ -104,23 +108,30 @@ function CondensedScoreBoard({
         <p className={styles.emptyLeaders}>No scores yet</p>
       ) : (
         <ol className={styles.leaderList}>
-          {top.map((r) => (
-            <li key={`${title}-${r.player_id}`}>
-              <Link
-                href={`/player?player_id=${encodeURIComponent(r.player_id)}&name=${encodeURIComponent(r.full_name)}`}
-                className={styles.leaderLink}
-              >
-                <span className={styles.leaderRank}>{rankOf(r)}</span>
-                <span
-                  className={styles.leaderDot}
-                  style={{ background: "rgba(212, 184, 150, 0.85)" }}
-                  aria-hidden
-                />
-                <span className={styles.leaderName}>{formatShortName(r.full_name)}</span>
-                <span className={styles.leaderVal}>{fmtScore(scoreOf(r))}</span>
-              </Link>
-            </li>
-          ))}
+          {top.map((r) => {
+            const color =
+              colorByPlayer?.get(r.player_id) ?? FALLBACK_CHART_STROKE;
+            return (
+              <li key={`${title}-${r.player_id}`}>
+                <Link
+                  href={`/player?player_id=${encodeURIComponent(r.player_id)}&name=${encodeURIComponent(r.full_name)}`}
+                  className={styles.leaderLink}
+                  style={
+                    {
+                      ["--leader-color" as string]: color,
+                    } as CSSProperties
+                  }
+                >
+                  <span className={styles.leaderRank}>{rankOf(r)}</span>
+                  <TeamMarkPip color={color} size={7} />
+                  <span className={styles.leaderName}>
+                    {formatShortName(r.full_name)}
+                  </span>
+                  <span className={styles.leaderVal}>{fmtScore(scoreOf(r))}</span>
+                </Link>
+              </li>
+            );
+          })}
         </ol>
       )}
     </section>
@@ -152,6 +163,22 @@ export function HomeDashboard({
       : "loading"
   );
   const fetchGen = useRef(0);
+
+  /** Best-effort chartPrimary from league leaders (TEAM_MARK_UX pips). */
+  const colorByPlayer = useMemo(() => {
+    const m = new Map<string, string>();
+    const add = (entries: { player_id: string; chart_color?: string }[] | undefined) => {
+      if (!entries) return;
+      for (const e of entries) {
+        if (e.chart_color && !m.has(e.player_id)) m.set(e.player_id, e.chart_color);
+      }
+    };
+    for (const key of Object.keys(context.leaders ?? {})) {
+      add(context.leaders[key as keyof typeof context.leaders]);
+    }
+    add(context.stocks_leaders);
+    return m;
+  }, [context.leaders, context.stocks_leaders]);
 
   const radarData = useMemo(() => {
     const avgs = fantasy?.pool_avgs;
@@ -378,6 +405,7 @@ export function HomeDashboard({
                 rows={rows}
                 scoreOf={b.score}
                 rankOf={b.rank}
+                colorByPlayer={colorByPlayer}
               />
             ))
           : BOARD_META.map((b) => (

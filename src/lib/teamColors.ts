@@ -45,8 +45,8 @@ export type TeamColorToken = {
   /** 1–2 accent hexes */
   accents: [string] | [string, string];
   /**
-   * Stroke color for dark glass charts — hue-faithful; lightness nudged only
-   * when primary would fail contrast on near-black backgrounds.
+   * Chart / UI main stroke + mark color — locked Chart UI main hex
+   * (CHART_UI_MAINS.md / Cavin). Exact hex; never lighten/wash.
    */
   chartPrimary: string;
   /** Citation tag → TEAM_COLORS.md per-team row */
@@ -62,28 +62,14 @@ function parseHex(hex: string): { r: number; g: number; b: number } {
   };
 }
 
-function relativeLuminance(hex: string): number {
-  const { r, g, b } = parseHex(hex);
-  const lin = [r, g, b].map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
-}
 
-/** Nudge very-dark primaries up for dark-glass chart strokes; keep hue. */
+/**
+ * @deprecated WASH BANNED — do not use for chartPrimary / identity strokes.
+ * Kept only so accidental imports fail closed (returns primary unchanged).
+ * Chart UI mains come from CHART_UI_MAINS.md via T(..., chartPrimary).
+ */
 export function chartPrimaryFromBrand(primary: string): string {
-  const L = relativeLuminance(primary);
-  // Target ~readable on #0c0e16 — if too dark, mix toward white ~55%
-  if (L >= 0.12) return primary;
-  const { r, g, b } = parseHex(primary);
-  const t = 0.55;
-  const nr = Math.round(r + (255 - r) * t);
-  const ng = Math.round(g + (255 - g) * t);
-  const nb = Math.round(b + (255 - b) * t);
-  return `#${[nr, ng, nb]
-    .map((x) => x.toString(16).padStart(2, "0"))
-    .join("")}`;
+  return primary;
 }
 
 function T(
@@ -91,14 +77,17 @@ function T(
   name: string,
   primary: string,
   accents: [string] | [string, string],
-  source: string
+  source: string,
+  /** Locked Chart UI main — required override when ≠ brand primary. */
+  chartPrimary?: string
 ): TeamColorToken {
   return {
     abbr,
     name,
     primary,
     accents,
-    chartPrimary: chartPrimaryFromBrand(primary),
+    // Exact locked hex as-is — never lighten/wash (Cavin CHART_UI_MAINS).
+    chartPrimary: chartPrimary ?? primary,
     source,
   };
 }
@@ -108,11 +97,11 @@ export const TEAM_COLORS: Record<TeamAbbr, TeamColorToken> = {
   // ATL Hawks Red + Volt Green + Charcoal — brand / sportsbrackets + coloracci
   ATL: T("ATL", "Atlanta Hawks", "#E03A3E", ["#C1D32F", "#26282A"], "brand:sportsbrackets+coloracci+teampalettes"),
   // BKN black/white — brand
-  BKN: T("BKN", "Brooklyn Nets", "#000000", ["#FFFFFF"], "brand:sportsbrackets+teampalettes"),
+  BKN: T("BKN", "Brooklyn Nets", "#000000", ["#FFFFFF"], "brand:sportsbrackets+teampalettes", "#FFFFFF"),
   // BOS Celtics Green + Gold — brand (#007A33 not wiki #008348)
   BOS: T("BOS", "Boston Celtics", "#007A33", ["#BA9653"], "brand:sportsbrackets+teampalettes+coloracci"),
   // CHA Hornets Purple + Teal — brand (purple primary)
-  CHA: T("CHA", "Charlotte Hornets", "#1D1160", ["#00788C"], "brand:sportsbrackets+coloracci"),
+  CHA: T("CHA", "Charlotte Hornets", "#1D1160", ["#00788C"], "brand:sportsbrackets+coloracci", "#00788C"),
   // CHI Bulls Red + Black
   CHI: T("CHI", "Chicago Bulls", "#CE1141", ["#000000"], "brand:sportsbrackets+teampalettes"),
   // CLE Wine + Gold (+ Navy in brand; gold is chart accent)
@@ -120,19 +109,19 @@ export const TEAM_COLORS: Record<TeamAbbr, TeamColorToken> = {
   // DAL Royal Blue + Navy
   DAL: T("DAL", "Dallas Mavericks", "#00538C", ["#002B5E"], "brand:sportsbrackets+coloracci"),
   // DEN Midnight Blue + Sunshine Yellow + Flatirons Red
-  DEN: T("DEN", "Denver Nuggets", "#0E2240", ["#FEC524", "#8B2131"], "brand:sportsbrackets+coloracci"),
+  DEN: T("DEN", "Denver Nuggets", "#0E2240", ["#FEC524", "#8B2131"], "brand:sportsbrackets+coloracci", "#FEC524"),
   // DET Red + Royal Blue
   DET: T("DET", "Detroit Pistons", "#C8102E", ["#1D42BA"], "brand:sportsbrackets+teampalettes"),
   // GSW Warriors Blue + Golden Yellow
-  GSW: T("GSW", "Golden State Warriors", "#1D428A", ["#FFC72C"], "brand:sportsbrackets+teampalettes"),
+  GSW: T("GSW", "Golden State Warriors", "#1D428A", ["#FFC72C"], "brand:sportsbrackets+teampalettes", "#FFC72C"),
   // HOU Rockets Red + Black
   HOU: T("HOU", "Houston Rockets", "#CE1141", ["#000000"], "brand:sportsbrackets+teampalettes"),
   // IND Pacers Blue + Yellow
-  IND: T("IND", "Indiana Pacers", "#002D62", ["#FDBB30"], "brand:sportsbrackets+teampalettes"),
+  IND: T("IND", "Indiana Pacers", "#002D62", ["#FDBB30"], "brand:sportsbrackets+teampalettes", "#FDBB30"),
   // LAC Red + Blue
   LAC: T("LAC", "LA Clippers", "#C8102E", ["#1D428A"], "brand:sportsbrackets+teampalettes"),
   // LAL Purple + Gold (PMS 526 C / #552583)
-  LAL: T("LAL", "Los Angeles Lakers", "#552583", ["#FDB927"], "brand:teamcolorcodes+teampalettes"),
+  LAL: T("LAL", "Los Angeles Lakers", "#552583", ["#FDB927"], "brand:teamcolorcodes+teampalettes", "#FDB927"),
   // MEM Beale Street Blue + Navy + Yellow
   MEM: T("MEM", "Memphis Grizzlies", "#5D76A9", ["#12173F", "#F5B112"], "brand:sportsbrackets+coloracci"),
   // MIA Red + Yellow (flame)
@@ -140,11 +129,11 @@ export const TEAM_COLORS: Record<TeamAbbr, TeamColorToken> = {
   // MIL Good Land Green (forest/olive PMS 350 C) + Cream City Cream + Great Lakes Blue — NOT neon
   MIL: T("MIL", "Milwaukee Bucks", "#00471B", ["#EEE1C6", "#0077C0"], "brand:nba-bucks-guidelines+teamcolorsguide"),
   // MIN Midnight Blue + Lake Blue + Aurora Green (2017 brand)
-  MIN: T("MIN", "Minnesota Timberwolves", "#0C2340", ["#236192", "#78BE20"], "brand:nba-wolves-2017+brandcolorcode"),
+  MIN: T("MIN", "Minnesota Timberwolves", "#0C2340", ["#236192", "#78BE20"], "brand:nba-wolves-2017+brandcolorcode", "#78BE20"),
   // NOP Navy + Red (+ Gold)
-  NOP: T("NOP", "New Orleans Pelicans", "#0C2340", ["#C8102E", "#85714D"], "brand:sportsbrackets+coloracci"),
+  NOP: T("NOP", "New Orleans Pelicans", "#0C2340", ["#C8102E", "#85714D"], "brand:sportsbrackets+coloracci", "#85714D"),
   // NYK Blue + Orange
-  NYK: T("NYK", "New York Knicks", "#006BB6", ["#F58426"], "brand:sportsbrackets+teampalettes"),
+  NYK: T("NYK", "New York Knicks", "#006BB6", ["#F58426"], "brand:sportsbrackets+teampalettes", "#F58426"),
   // OKC Thunder Blue + Sunset Orange
   OKC: T("OKC", "Oklahoma City Thunder", "#007AC1", ["#EF3B24"], "brand:sportsbrackets+teampalettes"),
   // ORL Magic Blue + Silver
@@ -152,7 +141,7 @@ export const TEAM_COLORS: Record<TeamAbbr, TeamColorToken> = {
   // PHI Blue + Red
   PHI: T("PHI", "Philadelphia 76ers", "#006BB6", ["#ED174C"], "brand:sportsbrackets+teampalettes"),
   // PHX Purple + Orange
-  PHX: T("PHX", "Phoenix Suns", "#1D1160", ["#E56020"], "brand:sportsbrackets+coloracci"),
+  PHX: T("PHX", "Phoenix Suns", "#1D1160", ["#E56020"], "brand:sportsbrackets+coloracci", "#E56020"),
   // POR Red + Black
   POR: T("POR", "Portland Trail Blazers", "#E03A3E", ["#000000"], "brand:sportsbrackets+teampalettes"),
   // SAC Purple + Gray
@@ -162,9 +151,9 @@ export const TEAM_COLORS: Record<TeamAbbr, TeamColorToken> = {
   // TOR Red + Black
   TOR: T("TOR", "Toronto Raptors", "#CE1141", ["#000000"], "brand:sportsbrackets+teampalettes"),
   // UTA Navy + Green + Yellow (post-2022 mountain palette; not purple era)
-  UTA: T("UTA", "Utah Jazz", "#002B5C", ["#00471B", "#F9A01B"], "brand:sportsbrackets+coloracci+teampalettes"),
+  UTA: T("UTA", "Utah Jazz", "#002B5C", ["#00471B", "#F9A01B"], "brand:sportsbrackets+coloracci+teampalettes", "#F9A01B"),
   // WAS Navy + Red
-  WAS: T("WAS", "Washington Wizards", "#002B5C", ["#E31837"], "brand:sportsbrackets+teampalettes"),
+  WAS: T("WAS", "Washington Wizards", "#002B5C", ["#E31837"], "brand:sportsbrackets+teampalettes", "#E31837"),
 };
 
 export function isTeamAbbr(v: string | null | undefined): v is TeamAbbr {
@@ -287,46 +276,62 @@ export function primaryTeamRecent(
 export const FALLBACK_CHART_STROKE = "#94a3b8";
 
 /**
- * Recency brightness on a single hue (from team chartPrimary).
- * Brightness lock among selected seasons: newest = 100% opacity/brightness,
- * oldest = 50%, linear middles. Team hue unchanged (most-recent-team one hue).
- * Supports up to MAX_SELECTED_SEASONS (5).
+ * Opacity-only recency factor (newest 1.0 → oldest 0.5, linear middles).
+ * WASH BANNED: do not recolor hue/sat/light into hsla lookalikes.
  */
-export function withRecencyBrightness(
-  hex: string,
+export function recencyStrokeOpacity(
   rankFromNewest: number,
   seasonCount: number
-): string {
-  const hue = hexToHue(hex);
+): number {
   const n = Math.max(1, seasonCount);
-  const factor =
-    n <= 1 ? 1 : 1 - (Math.max(0, rankFromNewest) / (n - 1)) * 0.5;
-  // Fixed sat/light so the linear factor alone carries opacity/brightness.
-  const sat = 88;
-  const light = 58;
-  return `hsla(${Math.round(hue)}, ${sat}%, ${light}%, ${factor})`;
+  if (n <= 1) return 1;
+  return 1 - (Math.max(0, rankFromNewest) / (n - 1)) * 0.5;
 }
 
 /**
- * Same-player multi-season: ONE hue from **most recent team** primary, then
- * brightness-by-recency (newest brightest → older dimmer). Do not recolor each
- * season by that year's team.
+ * @deprecated WASH BANNED — previously returned hsla(hue,88%,58%,α).
+ * Now returns the input hex unchanged. Prefer recencyStrokeOpacity + exact hex.
+ */
+export function withRecencyBrightness(
+  hex: string,
+  _rankFromNewest: number,
+  _seasonCount: number
+): string {
+  return hex;
+}
+
+/**
+ * Same-player multi-season strokes: exact **most recent team** chartPrimary
+ * hex for every season (Cavin CHART_UI_MAINS lock). Recency via
+ * seasonTeamStrokeOpacities (opacity-only) — never hsla wash.
  */
 export function seasonTeamStrokeColors(
   games: { season: string; min: number | null; team_abbreviation?: string | null }[],
   seasons: string[]
 ): Record<string, string> {
   const sorted = [...seasons].sort();
-  const n = sorted.length;
   const abbr =
     primaryTeamRecent(games) ??
     (sorted.length ? primaryTeamForSeason(games, sorted[sorted.length - 1]) : null);
   const token = getTeamColors(abbr);
   const hex = token?.chartPrimary ?? FALLBACK_CHART_STROKE;
   const out: Record<string, string> = {};
+  for (const season of sorted) {
+    out[season] = hex;
+  }
+  return out;
+}
+
+/** Per-season strokeOpacity (1.0 newest → 0.5 oldest). Pair with seasonTeamStrokeColors. */
+export function seasonTeamStrokeOpacities(
+  seasons: string[]
+): Record<string, number> {
+  const sorted = [...seasons].sort();
+  const n = sorted.length;
+  const out: Record<string, number> = {};
   sorted.forEach((season, idxFromOldest) => {
     const rankFromNewest = n - 1 - idxFromOldest;
-    out[season] = withRecencyBrightness(hex, rankFromNewest, n);
+    out[season] = recencyStrokeOpacity(rankFromNewest, n);
   });
   return out;
 }

@@ -77,6 +77,12 @@
   overflow-wrap: anywhere;
 }
 
+.titleWithPip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .subtitle {
   margin: 0.3rem 0 0;
   color: var(--fh-text-muted);
@@ -879,6 +885,9 @@
 
 .recentChip {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(10, 10, 11, 0.55);
   color: #e7e5e4;

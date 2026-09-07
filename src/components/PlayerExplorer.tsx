@@ -3,10 +3,10 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
   Legend,
-  Line,
-  LineChart,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
@@ -47,9 +47,16 @@ import {
 import {
   FALLBACK_CHART_STROKE,
   displayTeamChartPrimary,
+  displayTeamPrimary,
   primaryTeamRecent,
   seasonTeamStrokeColors,
+  seasonTeamStrokeOpacities,
 } from "@/lib/teamColors";
+import { TeamMarkPip, teamMarkGlow } from "@/components/TeamMarkPip";
+import {
+  chartYTicks,
+  resolveChartYDomain,
+} from "@/lib/chartYAxis";
 import {
   STAT_OPTIONS,
   RADAR_NORM_NOTE,
@@ -94,7 +101,7 @@ function isPlayedGame(g: GameRow): boolean {
 
 type StatKey = RadarStatKey;
 
-/** Season strokes: team chartPrimary + brightness-by-recency (see teamColors). */
+/** Season strokes: exact chartPrimary hex + opacity-only recency (wash banned). */
 
 const SEARCH_MIN_LEN = 2;
 const SEARCH_DEBOUNCE_MS = 220;
@@ -650,8 +657,8 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
   }
 
   /**
-   * Dense preferred: X = game_index (1–82 reg / 1–28 PO), solid on played,
-   * dotted hold-last connectors across nulls; null≠0.
+   * Dense preferred: X = game_index (1–82 reg / 1–28 PO), Bar columns on played,
+   * DNP/not-reached = null empty slot (no gap connectors). null≠0.
    * Curated fallback only if dense missing — played-sequence i+1 (no fake densify claim).
    */
   const REG_X_MAX = 82;
@@ -704,73 +711,21 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
       for (const season of chartSeasons) {
         const g = indexed.get(season)?.get(game_num);
         if (!g || !isPlayedGame(g)) {
-          // DNP / not-reached / missing → omit (undefined), never 0 — Recharts null→0 trap
-          row[season] = undefined as unknown as null;
+          // DNP / not-reached / missing → null empty slot (never 0)
+          row[season] = null;
           row[`date_${season}`] = g?.game_date ?? null;
           row[`dnp_${season}`] = g && !isPlayedGame(g) ? 1 : null;
         } else {
           const v = gameStat(g, stat);
           row[season] =
-            v == null || Number.isNaN(Number(v))
-              ? (undefined as unknown as null)
-              : v;
+            v == null || Number.isNaN(Number(v)) ? null : v;
           row[`date_${season}`] = g.game_date;
         }
       }
       rows.push(row);
     }
-    // Gap path: hold-last / hold-first / linear mid-interp — NEVER coerce to 0.
-    // Value series stays null for DNP; gap series is finite for full domain.
-    for (const season of chartSeasons) {
-      const gapKey = `${season}__gap`;
-      const played: { i: number; v: number }[] = [];
-      for (let i = 0; i < rows.length; i++) {
-        const v = rows[i][season];
-        if (typeof v === "number" && Number.isFinite(v)) {
-          played.push({ i, v });
-        }
-      }
-      if (played.length === 0) {
-        for (let i = 0; i < rows.length; i++) {
-          // No played points — leave gap undefined (not 0)
-          delete rows[i][gapKey];
-        }
-        continue;
-      }
-      const first = played[0];
-      const last = played[played.length - 1];
-      for (let i = 0; i < rows.length; i++) {
-        const v = rows[i][season];
-        if (typeof v === "number" && Number.isFinite(v)) {
-          rows[i][gapKey] = v;
-          continue;
-        }
-        if (i < first.i) {
-          rows[i][gapKey] = first.v; // leading hold — not 0
-          continue;
-        }
-        if (i > last.i) {
-          rows[i][gapKey] = last.v; // trailing hold — not 0
-          continue;
-        }
-        // Mid DNP: linear interpolate between neighboring played points
-        let lo = played[0];
-        let hi = played[played.length - 1];
-        for (let p = 0; p < played.length - 1; p++) {
-          if (played[p].i <= i && played[p + 1].i >= i) {
-            lo = played[p];
-            hi = played[p + 1];
-            break;
-          }
-        }
-        if (hi.i === lo.i) {
-          rows[i][gapKey] = lo.v;
-        } else {
-          const t = (i - lo.i) / (hi.i - lo.i);
-          rows[i][gapKey] = lo.v + (hi.v - lo.v) * t;
-        }
-      }
-    }
+    // Histogram columns: played games have values; DNP / not-reached = null empty slot.
+    // No gap connectors / dotted hold paths (CoS histogram BUILD GO).
     return rows;
   }, [games, gamesSource, chartSeasons, chartScope, stat]);
 
@@ -796,14 +751,40 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
   /** Most recent season's primary team (display / recent accents). */
   const displayTeam = useMemo(() => primaryTeamRecent(games), [games]);
 
+  /** Charts / pips / glow — locked chartPrimary (exact hex). */
   const displayTeamAccent = useMemo(
     () => displayTeamChartPrimary(games) ?? FALLBACK_CHART_STROKE,
     [games]
+  );
+  /** Chips / denser fills — brand primary (identity). */
+  const displayTeamBrand = useMemo(
+    () => displayTeamPrimary(games) ?? displayTeamAccent,
+    [games, displayTeamAccent]
   );
 
   const seasonColors = useMemo(
     () => seasonTeamStrokeColors(games, chartSeasons),
     [games, chartSeasons]
+  );
+  const seasonOpacities = useMemo(
+    () => seasonTeamStrokeOpacities(chartSeasons),
+    [chartSeasons]
+  );
+
+  const yDomain = useMemo(() => {
+    const vals: number[] = [];
+    for (const row of chartData) {
+      for (const s of chartSeasons) {
+        const v = row[s];
+        if (typeof v === "number" && Number.isFinite(v)) vals.push(v);
+      }
+    }
+    return resolveChartYDomain(stat, vals);
+  }, [chartData, chartSeasons, stat]);
+
+  const yTicks = useMemo(
+    () => chartYTicks(stat, yDomain[1]),
+    [stat, yDomain]
   );
 
   const isPct = STAT_OPTIONS.find((s) => s.key === stat)?.pct === true;
@@ -841,9 +822,28 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>
-            {hasUrlPlayer && selected?.full_name && selected.full_name !== "…"
-              ? selected.full_name
-              : "Player Explorer"}
+            {hasUrlPlayer && selected?.full_name && selected.full_name !== "…" ? (
+              <span className={styles.titleWithPip}>
+                <TeamMarkPip
+                  color={displayTeam ? displayTeamAccent : null}
+                  size={8}
+                  title={displayTeam ?? undefined}
+                />
+                <span
+                  style={
+                    displayTeam
+                      ? ({
+                          textShadow: `0 0 18px color-mix(in srgb, ${displayTeamAccent} 40%, transparent)`,
+                        } as CSSProperties)
+                      : undefined
+                  }
+                >
+                  {selected.full_name}
+                </span>
+              </span>
+            ) : (
+              "Player Explorer"
+            )}
           </h1>
           <p className={styles.subtitle}>
             {hasUrlPlayer
@@ -903,13 +903,16 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                   style={
                     selected?.player_id === p.player_id
                       ? ({
-                          borderColor: displayTeamAccent,
-                          boxShadow: `0 0 12px ${displayTeamAccent}55`,
+                          borderColor: displayTeamBrand,
+                          boxShadow: teamMarkGlow(displayTeamAccent, 12),
                         } as CSSProperties)
                       : undefined
                   }
                   onClick={() => pickPlayer(p)}
                 >
+                  {selected?.player_id === p.player_id ? (
+                    <TeamMarkPip color={displayTeamAccent} size={6} />
+                  ) : null}
                   {formatShortName(p.full_name)}
                   {selected?.player_id === p.player_id && displayTeam
                     ? ` · ${displayTeam}`
@@ -939,7 +942,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               Outside active top-250 pool
             </p>
           ) : null}
-          {/* 1) Line chart — X = game_index (dense) or game_num (curated fallback) */}
+          {/* 1) Game histogram (Bar columns) — X = game_index / game_num; DNP = empty */}
           <section className={styles.panel} aria-label="Game chart">
             <h2 className={styles.panelTitle}>
               {selected.full_name} · game-by-game
@@ -1019,9 +1022,11 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
             ) : (
               <div className={styles.chartBox}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
+                  <BarChart
                     data={chartData}
                     margin={{ top: 8, right: 8, left: 4, bottom: 12 }}
+                    barCategoryGap="12%"
+                    barGap={1}
                   >
                     <CartesianGrid
                       stroke="rgba(255,255,255,0.08)"
@@ -1047,8 +1052,9 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                       width={36}
                       stroke="#cbd5e1"
                       tick={{ fill: "#cbd5e1", fontSize: 11 }}
-                      domain={isPct ? [0, 100] : ["dataMin", "dataMax"]}
-                      allowDataOverflow={false}
+                      domain={yDomain}
+                      ticks={yTicks}
+                      allowDataOverflow
                       tickFormatter={(v) =>
                         isPct ? `${Number(v).toFixed(0)}` : String(v)
                       }
@@ -1064,10 +1070,9 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                       formatter={(value: number | string, name: string) => {
                         if (value == null || value === "") return ["—", name];
                         const n = Number(value);
-                        const series =
-                          isPct
-                            ? `${name} (single-game rate)`
-                            : name;
+                        const series = isPct
+                          ? `${name} (single-game rate)`
+                          : name;
                         if (isPct) return [`${n.toFixed(1)}%`, series];
                         return [
                           Number.isInteger(n) ? n : n.toFixed(1),
@@ -1077,8 +1082,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                       labelFormatter={(label, payload) => {
                         const dates = (payload ?? [])
                           .map((p) => {
-                            const rawKey = String(p.dataKey ?? p.name ?? "");
-                            const season = rawKey.replace(/__gap$/, "");
+                            const season = String(p.dataKey ?? p.name ?? "");
                             const row = p.payload as Record<
                               string,
                               string | number | null
@@ -1095,41 +1099,26 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                     <Legend
                       wrapperStyle={{ fontSize: 12, maxWidth: "100%" }}
                     />
-                    {chartSeasons.flatMap((s) => {
-                      const stroke = seasonColors[s] || FALLBACK_CHART_STROKE;
-                      return [
-                        <Line
-                          key={`${s}-gap`}
-                          type="monotone"
-                          dataKey={`${s}__gap`}
-                          name={`${s} gaps`}
-                          stroke={stroke}
-                          strokeWidth={chartScope === "playoff_only" ? 1.5 : 2}
-                          strokeOpacity={0.85}
-                          strokeDasharray={
-                            chartScope === "playoff_only" ? "5 4" : "2 6"
-                          }
-                          dot={false}
-                          activeDot={false}
-                          legendType="none"
-                          connectNulls
-                          isAnimationActive={false}
-                        />,
-                        <Line
+                    {chartSeasons.map((s) => {
+                      const fill = seasonColors[s] || FALLBACK_CHART_STROKE;
+                      const opacity = seasonOpacities[s] ?? 1;
+                      return (
+                        <Bar
                           key={s}
-                          type="monotone"
                           dataKey={s}
                           name={s}
-                          stroke={stroke}
-                          strokeWidth={2.25}
-                          dot={{ r: 2, strokeWidth: 0, fill: stroke }}
-                          connectNulls={false}
+                          fill={fill}
+                          fillOpacity={opacity}
+                          stroke={fill}
+                          strokeOpacity={opacity}
+                          strokeWidth={0.5}
+                          maxBarSize={10}
                           isAnimationActive={false}
-                          // null ≠ 0: Recharts must not draw missing games at baseline
-                        />,
-                      ];
+                          // null DNP → empty column slot (no connector)
+                        />
+                      );
                     })}
-                  </LineChart>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             )}
@@ -1144,8 +1133,8 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                 {gamesSource === "dense" ? "game_index" : "game_num"}
               </code>
               {chartScope === "playoff_only"
-                ? " (playoffs: fixed 1–28; DNP/not-reached = null; dashed gaps)"
-                : " (regular: fixed 1–82; solid played; dotted gaps; null≠0; newest season brightest)"}{" "}
+                ? " (playoffs: fixed 1–28; DNP/not-reached = empty column)"
+                : " (regular: fixed 1–82; columns for played; DNP = empty; null≠0; newest season full opacity → older dimmer)"}{" "}
               · counting stats are per-game; FG%/FT% are single-game rates
             </p>
           </section>
@@ -1211,18 +1200,23 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                       tick={false}
                       axisLine={false}
                     />
-                    {chartSeasons.map((s) => (
-                      <Radar
-                        key={s}
-                        name={s}
-                        dataKey={s}
-                        stroke={seasonColors[s] || FALLBACK_CHART_STROKE}
-                        fill={seasonColors[s] || FALLBACK_CHART_STROKE}
-                        fillOpacity={0.22}
-                        strokeWidth={2}
-                        isAnimationActive={false}
-                      />
-                    ))}
+                    {chartSeasons.map((s) => {
+                      const stroke = seasonColors[s] || FALLBACK_CHART_STROKE;
+                      const opacity = seasonOpacities[s] ?? 1;
+                      return (
+                        <Radar
+                          key={s}
+                          name={s}
+                          dataKey={s}
+                          stroke={stroke}
+                          fill={stroke}
+                          fillOpacity={0.12 + 0.12 * opacity}
+                          strokeOpacity={opacity}
+                          strokeWidth={2}
+                          isAnimationActive={false}
+                        />
+                      );
+                    })}
                     <Legend
                       wrapperStyle={{ fontSize: 12, maxWidth: "100%" }}
                     />
@@ -1282,8 +1276,8 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                       style={
                         active
                           ? ({
-                              borderColor: displayTeamAccent,
-                              boxShadow: `0 0 0 1px ${displayTeamAccent}55, 0 0 18px ${displayTeamAccent}40`,
+                              borderColor: displayTeamBrand,
+                              boxShadow: `0 0 0 1px color-mix(in srgb, ${displayTeamBrand} 35%, transparent), ${teamMarkGlow(displayTeamAccent, 18)}`,
                             } as CSSProperties)
                           : undefined
                       }

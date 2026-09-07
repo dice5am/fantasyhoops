@@ -7,6 +7,7 @@ import {
   type RecentPlayer,
 } from "@/lib/recentPlayers";
 import { formatShortName } from "@/lib/formatName";
+import { TeamMarkPip, teamMarkGlow } from "@/components/TeamMarkPip";
 import styles from "./RecentChips.module.css";
 
 type Props = {
@@ -53,7 +54,7 @@ export function RecentChips({ activePlayerId, accent }: Props) {
                 active && accent
                   ? ({
                       borderColor: accent,
-                      boxShadow: `0 0 12px ${accent}55`,
+                      boxShadow: teamMarkGlow(accent, 12),
                     } as CSSProperties)
                   : undefined
               }
@@ -64,6 +65,7 @@ export function RecentChips({ activePlayerId, accent }: Props) {
                 router.replace(`/player?${params.toString()}`, { scroll: false });
               }}
             >
+              {active && accent ? <TeamMarkPip color={accent} size={6} /> : null}
               {formatShortName(p.full_name)}
             </button>
           );

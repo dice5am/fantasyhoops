@@ -26,6 +26,9 @@
 .recentChip,
 .recentChipActive {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   border: 1px solid var(--fh-border);
   background: rgba(10, 10, 11, 0.5);
   color: var(--fh-text);
