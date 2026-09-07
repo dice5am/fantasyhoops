@@ -1220,7 +1220,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={chartData}
-                    margin={{ top: 22, right: 8, left: 4, bottom: 12 }}
+                    margin={{ top: 40, right: 8, left: 4, bottom: 12 }}
                     barCategoryGap="12%"
                     barGap={1}
                   >
