@@ -14,7 +14,12 @@ function escapeHtml(s: string): string {
 
 function inlineFormat(text: string): string {
   let s = escapeHtml(text);
-  s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+  const codeSlots: string[] = [];
+  s = s.replace(/`([^`]+)`/g, (_m, code: string) => {
+    const i = codeSlots.length;
+    codeSlots.push(code);
+    return `\u0000CODE${i}\u0000`;
+  });
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/(^|[^*])\*([^*]+)\*(?![*])/g, "$1<em>$2</em>");
   s = s.replace(/_([^_]+)_/g, "<em>$1</em>");
@@ -22,6 +27,9 @@ function inlineFormat(text: string): string {
     /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
     '<a href="$2" rel="noopener noreferrer" target="_blank">$1</a>',
   );
+  s = s.replace(/\u0000CODE(\d+)\u0000/g, (_m, idx: string) => {
+    return `<code>${codeSlots[Number(idx)]}</code>`;
+  });
   return s;
 }
 
