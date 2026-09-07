@@ -64,7 +64,7 @@
 
 .recentChip {
   appearance: none;
-  border: 1px solid rgba(212, 184, 150, 0.28);
+  border: 1px solid var(--fh-border);
   background: rgba(22, 22, 24, 0.55);
   color: var(--fh-text);
   border-radius: 999px;
@@ -77,8 +77,8 @@
 }
 
 .recentChip:hover {
-  border-color: rgba(212, 184, 150, 0.55);
-  background: rgba(212, 184, 150, 0.12);
+  border-color: var(--fh-border-strong);
+  background: var(--fh-champagne-soft);
 }
 
 @media (max-width: 800px) {

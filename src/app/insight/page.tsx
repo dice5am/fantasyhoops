@@ -12,7 +12,6 @@ export default function InsightPage() {
 
   return (
     <main className={styles.page}>
-      <div className={styles.glow} aria-hidden />
       <header className={styles.header}>
         <p className={styles.kicker}>Insight</p>
         <h1 className={styles.title}>

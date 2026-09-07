@@ -9,42 +9,7 @@
   min-width: 0;
 }
 
-.glowOrange,
-.glowCyan,
-.glowMagenta {
-  position: fixed;
-  pointer-events: none;
-  z-index: -1;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.45;
-}
-
-.glowOrange {
-  width: 420px;
-  height: 420px;
-  top: -80px;
-  right: -60px;
-  background: radial-gradient(circle, var(--fh-accent) 0%, transparent 70%);
-}
-
-.glowCyan {
-  width: 380px;
-  height: 380px;
-  bottom: 10%;
-  left: -100px;
-  background: radial-gradient(circle, var(--fh-neon) 0%, transparent 70%);
-  opacity: 0.3;
-}
-
-.glowMagenta {
-  width: 320px;
-  height: 320px;
-  top: 40%;
-  right: 5%;
-  background: radial-gradient(circle, #60a5fa 0%, transparent 70%);
-  opacity: 0.25;
-}
+/* page back owned by body — no orb glows */
 
 .header {
   position: relative;
@@ -58,14 +23,14 @@
   margin-bottom: 0.85rem;
   padding: 1.1rem 1.25rem;
   border-radius: 16px;
-  background: rgba(18, 18, 20, 0.55);
-  border: 1px solid rgba(201, 168, 108, 0.35);
+  background: var(--fh-surface-mid);
+  border: 1px solid var(--fh-border);
   box-shadow:
-    0 0 0 1px rgba(232, 213, 181, 0.08),
-    0 8px 32px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    var(--fh-edge-top),
+    var(--fh-edge-left),
+    0 8px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(var(--fh-glass-blur)) saturate(var(--fh-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--fh-glass-blur)) saturate(var(--fh-glass-saturate));
 }
 
 .title {
@@ -74,7 +39,7 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--fh-text);
-  text-shadow: 0 0 24px rgba(201, 168, 108, 0.35);
+  text-shadow: 0 0 24px var(--fh-champagne-soft);
   overflow-wrap: anywhere;
 }
 
@@ -127,18 +92,18 @@
 
 .seg button:hover {
   color: #fff;
-  background: rgba(201, 168, 108, 0.15);
+  background: rgba(247, 231, 206, 0.15);
 }
 
 .seg button.active {
   background: linear-gradient(
     135deg,
-    rgba(201, 168, 108, 0.85),
+    rgba(247, 231, 206, 0.85),
     rgba(29, 78, 216, 0.75)
   );
   color: #fff;
   box-shadow:
-    0 0 12px rgba(201, 168, 108, 0.45),
+    0 0 12px rgba(247, 231, 206, 0.45),
     inset 0 0 0 1px rgba(255, 255, 255, 0.15);
   font-weight: 600;
 }
@@ -157,7 +122,7 @@
   min-width: 0;
   min-height: 44px;
   padding: 0.55rem 0.75rem;
-  border: 1px solid rgba(232, 213, 181, 0.35);
+  border: 1px solid rgba(255, 252, 245, 0.35);
   border-radius: 10px;
   font: inherit;
   font-size: 0.88rem;
@@ -165,7 +130,7 @@
   background: rgba(10, 10, 11, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 0 16px rgba(232, 213, 181, 0.08);
+  box-shadow: 0 0 16px rgba(255, 252, 245, 0.08);
   outline: none;
 }
 
@@ -174,8 +139,8 @@
 }
 
 .search input:focus {
-  border-color: rgba(232, 213, 181, 0.7);
-  box-shadow: 0 0 0 2px rgba(232, 213, 181, 0.2);
+  border-color: rgba(255, 252, 245, 0.7);
+  box-shadow: 0 0 0 2px rgba(255, 252, 245, 0.2);
 }
 
 .meta {
@@ -189,7 +154,7 @@
 .meta code {
   font-size: 0.8rem;
   color: var(--fh-neon);
-  background: rgba(232, 213, 181, 0.1);
+  background: rgba(255, 252, 245, 0.1);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
@@ -199,7 +164,7 @@
   background: rgba(18, 18, 20, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
-    0 0 0 1px rgba(201, 168, 108, 0.12),
+    0 0 0 1px rgba(247, 231, 206, 0.12),
     0 12px 40px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px) saturate(1.35);
@@ -230,7 +195,7 @@
 .emptyBody code {
   color: var(--fh-neon);
   font-size: 0.85rem;
-  background: rgba(232, 213, 181, 0.1);
+  background: rgba(255, 252, 245, 0.1);
   padding: 0.05rem 0.3rem;
   border-radius: 4px;
 }
@@ -268,8 +233,8 @@
   font-weight: 650;
   z-index: 1;
   color: var(--fh-accent);
-  border-bottom: 1px solid rgba(201, 168, 108, 0.35);
-  box-shadow: 0 1px 0 rgba(232, 213, 181, 0.15);
+  border-bottom: 1px solid rgba(247, 231, 206, 0.35);
+  box-shadow: 0 1px 0 rgba(255, 252, 245, 0.15);
 }
 
 .thBtn {
@@ -289,7 +254,7 @@
 
 .thBtn:hover {
   color: #fff;
-  text-shadow: 0 0 10px rgba(201, 168, 108, 0.5);
+  text-shadow: 0 0 10px rgba(247, 231, 206, 0.5);
 }
 
 .sortMark {
@@ -315,7 +280,7 @@
 .playerLink {
   color: var(--fh-accent);
   text-decoration: underline;
-  text-decoration-color: rgba(232, 213, 181, 0.35);
+  text-decoration-color: rgba(255, 252, 245, 0.35);
   text-underline-offset: 0.18em;
   cursor: pointer;
   font-weight: 650;
@@ -326,8 +291,8 @@
 .playerLink:focus-visible {
   color: #fff;
   text-decoration-color: rgba(255, 255, 255, 0.85);
-  text-shadow: 0 0 12px rgba(201, 168, 108, 0.55);
-  outline: 2px solid rgba(232, 213, 181, 0.7);
+  text-shadow: 0 0 12px rgba(247, 231, 206, 0.55);
+  outline: 2px solid rgba(255, 252, 245, 0.7);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -382,7 +347,7 @@
 }
 
 .table tbody tr:hover {
-  background: rgba(201, 168, 108, 0.08);
+  background: rgba(247, 231, 206, 0.08);
 }
 
 .table tbody tr:hover .num {
@@ -399,24 +364,24 @@
 }
 
 .rowClickable:hover {
-  background: rgba(201, 168, 108, 0.1);
+  background: rgba(247, 231, 206, 0.1);
 }
 
 .rowClickable:focus-visible {
-  outline: 2px solid rgba(232, 213, 181, 0.75);
+  outline: 2px solid rgba(255, 252, 245, 0.75);
   outline-offset: -2px;
-  background: rgba(232, 213, 181, 0.08);
+  background: rgba(255, 252, 245, 0.08);
 }
 
 .thBtn:focus-visible {
-  outline: 2px solid rgba(232, 213, 181, 0.75);
+  outline: 2px solid rgba(255, 252, 245, 0.75);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 .table tbody tr.rowClickable:hover .player {
   color: var(--fh-accent);
-  text-shadow: 0 0 10px rgba(201, 168, 108, 0.45);
+  text-shadow: 0 0 10px rgba(247, 231, 206, 0.45);
 }
 
 .srOnly {
@@ -486,12 +451,6 @@
     padding: 1.5rem 1rem;
   }
 
-  .glowOrange,
-  .glowCyan,
-  .glowMagenta {
-    opacity: 0.28;
-    filter: blur(64px);
-  }
 }
 
 
@@ -512,7 +471,7 @@
 }
 
 .rowClickable:focus-visible {
-  outline: 2px solid rgba(232, 213, 181, 0.8);
+  outline: 2px solid rgba(255, 252, 245, 0.8);
   outline-offset: -2px;
 }
 

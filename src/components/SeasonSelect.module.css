@@ -16,9 +16,9 @@
   max-width: 100%;
   padding: 0.4rem 0.7rem 0.4rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid rgba(212, 184, 150, 0.28);
+  border: 1px solid var(--fh-border);
   background: rgba(18, 18, 20, 0.65);
-  color: var(--fh-text, #f2ebe3);
+  color: var(--fh-text);
   font: inherit;
   font-size: 0.84rem;
   font-weight: 600;
@@ -27,8 +27,18 @@
 }
 
 .trigger:hover {
-  border-color: rgba(212, 184, 150, 0.45);
-  background: rgba(28, 28, 30, 0.75);
+  border-color: var(--fh-border-strong);
+  background: var(--fh-champagne-soft);
+}
+
+.trigger:active {
+  background: var(--fh-champagne-deep);
+  color: var(--fh-champagne-text);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--fh-champagne-pop);
+  outline-offset: 2px;
 }
 
 .triggerLabel {
@@ -55,11 +65,11 @@
   overflow-y: auto;
   padding: 0.35rem;
   border-radius: 10px;
-  border: 1px solid rgba(232, 213, 181, 0.35);
+  border: 1px solid rgba(255, 252, 245, 0.35);
   background: rgba(18, 18, 20, 0.98);
   box-shadow:
     0 12px 28px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(232, 213, 181, 0.08);
+    0 0 0 1px rgba(255, 252, 245, 0.08);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -69,7 +79,7 @@
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--fh-text-muted, #a89880);
+  color: var(--fh-text-muted);
 }
 
 .option,
@@ -84,7 +94,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--fh-text-muted, #a89880);
+  color: var(--fh-text-muted);
   font: inherit;
   font-size: 0.88rem;
   font-weight: 600;
@@ -95,15 +105,15 @@
 
 .option:hover {
   color: #fff;
-  background: rgba(201, 168, 108, 0.15);
+  background: rgba(247, 231, 206, 0.15);
 }
 
 .optionOn {
   color: #0a0a0b;
   background: linear-gradient(
     135deg,
-    rgba(201, 168, 108, 0.92),
-    rgba(161, 128, 72, 0.82)
+    rgba(247, 231, 206, 0.92),
+    rgba(184, 149, 106, 0.82)
   );
 }
 
@@ -133,12 +143,12 @@
   max-width: 100%;
   padding: 0.4rem 2rem 0.4rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid rgba(212, 184, 150, 0.28);
+  border: 1px solid var(--fh-border);
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a89880' d='M1 1l5 5 5-5'/%3E%3C/svg%3E")
       no-repeat right 0.7rem center / 10px,
     rgba(18, 18, 20, 0.65);
-  color: var(--fh-text, #f2ebe3);
+  color: var(--fh-text);
   font: inherit;
   font-size: 0.84rem;
   font-weight: 600;
@@ -148,13 +158,13 @@
 
 .nativeSelect:hover,
 .nativeSelect:focus {
-  border-color: rgba(212, 184, 150, 0.45);
+  border-color: var(--fh-border-strong);
   outline: none;
 }
 
 .nativeSelect option {
   background: #121214;
-  color: #f2ebe3;
+  color: #F5EEE4;
 }
 
 .srOnly {

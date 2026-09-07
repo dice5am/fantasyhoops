@@ -25,31 +25,20 @@
 
 .recentChip,
 .recentChipActive {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 1px solid var(--fh-border);
-  background: rgba(10, 10, 11, 0.5);
-  color: var(--fh-text);
-  border-radius: 999px;
-  padding: 0.4rem 0.75rem;
-  min-height: 36px;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  touch-action: manipulation;
+  border-color: var(--fh-border-strong);
+  background: var(--fh-champagne-soft);
+  color: var(--fh-champagne-text);
+  box-shadow: var(--fh-selected-bloom);
 }
 
 .recentChip:hover {
-  border-color: rgba(232, 213, 181, 0.4);
-  background: rgba(232, 213, 181, 0.1);
+  border-color: var(--fh-border-strong);
+  background: var(--fh-champagne-soft);
 }
 
 .recentChipActive {
   border-color: var(--fh-accent);
-  background: rgba(201, 168, 108, 0.16);
+  background: var(--fh-champagne-soft);
 }
 
 @media (max-width: 800px) {

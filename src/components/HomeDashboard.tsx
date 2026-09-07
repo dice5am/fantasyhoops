@@ -327,8 +327,6 @@ export function HomeDashboard({
 
   return (
     <div className={styles.wrap} data-loading={loading ? "1" : "0"}>
-      <div className={styles.glowA} aria-hidden />
-      <div className={styles.glowB} aria-hidden />
 
       <header className={styles.header}>
         <div>
@@ -443,28 +441,28 @@ export function HomeDashboard({
                 <BarChart data={fantasy!.o1_hist}>
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: "#a89880", fontSize: 10 }}
+                    tick={{ fill: "#D4C4AE", fontSize: 10 }}
                     interval={0}
                     angle={-20}
                     textAnchor="end"
                     height={42}
                   />
                   <YAxis
-                    tick={{ fill: "#a89880", fontSize: 11 }}
+                    tick={{ fill: "#D4C4AE", fontSize: 11 }}
                     allowDecimals={false}
                   />
                   <Tooltip
                     contentStyle={{
                       background: "rgba(22, 22, 24, 0.92)",
-                      border: "1px solid rgba(212, 184, 150, 0.35)",
+                      border: "1px solid rgba(247, 231, 206, 0.35)",
                       borderRadius: 8,
-                      color: "#f2ebe3",
+                      color: "#FFFCF8",
                     }}
                   />
                   <Bar
                     dataKey="count"
                     name="Players"
-                    fill="rgba(212, 184, 150, 0.75)"
+                    fill="rgba(247, 231, 206, 0.75)"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -491,12 +489,12 @@ export function HomeDashboard({
                     dataKey="off"
                     name="OFF"
                     domain={[0, 100]}
-                    tick={{ fill: "#a89880", fontSize: 10 }}
+                    tick={{ fill: "#D4C4AE", fontSize: 10 }}
                     label={{
                       value: "OFF",
                       position: "insideBottom",
                       offset: -2,
-                      fill: "#a89880",
+                      fill: "#D4C4AE",
                       fontSize: 10,
                     }}
                   />
@@ -505,12 +503,12 @@ export function HomeDashboard({
                     dataKey="def"
                     name="DEF"
                     domain={[0, 100]}
-                    tick={{ fill: "#a89880", fontSize: 10 }}
+                    tick={{ fill: "#D4C4AE", fontSize: 10 }}
                     label={{
                       value: "DEF",
                       angle: -90,
                       position: "insideLeft",
-                      fill: "#a89880",
+                      fill: "#D4C4AE",
                       fontSize: 10,
                     }}
                   />
@@ -519,9 +517,9 @@ export function HomeDashboard({
                     cursor={{ strokeDasharray: "3 3" }}
                     contentStyle={{
                       background: "rgba(22, 22, 24, 0.92)",
-                      border: "1px solid rgba(212, 184, 150, 0.35)",
+                      border: "1px solid rgba(247, 231, 206, 0.35)",
                       borderRadius: 8,
-                      color: "#f2ebe3",
+                      color: "#FFFCF8",
                     }}
                     formatter={(value: number, name: string) => [
                       typeof value === "number" ? value.toFixed(1) : value,
@@ -534,11 +532,11 @@ export function HomeDashboard({
                       return p?.name ?? "";
                     }}
                   />
-                  <Scatter name="Players" data={scatterData} fill="rgba(212, 184, 150, 0.7)">
+                  <Scatter name="Players" data={scatterData} fill="rgba(247, 231, 206, 0.7)">
                     {scatterData.map((d) => (
                       <Cell
                         key={d.player_id}
-                        fill="rgba(212, 184, 150, 0.65)"
+                        fill="rgba(247, 231, 206, 0.65)"
                       />
                     ))}
                   </Scatter>
@@ -561,28 +559,28 @@ export function HomeDashboard({
                 <BarChart data={fantasy!.eff_hist}>
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: "#a89880", fontSize: 10 }}
+                    tick={{ fill: "#D4C4AE", fontSize: 10 }}
                     interval={0}
                     angle={-20}
                     textAnchor="end"
                     height={42}
                   />
                   <YAxis
-                    tick={{ fill: "#a89880", fontSize: 11 }}
+                    tick={{ fill: "#D4C4AE", fontSize: 11 }}
                     allowDecimals={false}
                   />
                   <Tooltip
                     contentStyle={{
                       background: "rgba(22, 22, 24, 0.92)",
-                      border: "1px solid rgba(212, 184, 150, 0.35)",
+                      border: "1px solid rgba(247, 231, 206, 0.35)",
                       borderRadius: 8,
-                      color: "#f2ebe3",
+                      color: "#FFFCF8",
                     }}
                   />
                   <Bar
                     dataKey="count"
                     name="Players"
-                    fill="rgba(180, 160, 130, 0.8)"
+                    fill="rgba(247, 231, 206, 0.8)"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -595,7 +593,7 @@ export function HomeDashboard({
           </div>
         </section>
 
-        <section className={styles.scorePanel} aria-label="Pool average radar">
+        <section className={`${styles.scorePanel} ${styles.scorePanelHero}`} aria-label="Pool average radar">
           <h2 className={styles.panelTitle}>Pool average · 9-cat</h2>
           <p className={styles.panelSub}>
             GP-weighted pool avgs for active topPct slice · same radar ranges as Player
@@ -604,10 +602,10 @@ export function HomeDashboard({
             {scoresReady || context.player_count > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="68%">
-                  <PolarGrid stroke="rgba(212, 184, 150, 0.18)" />
+                  <PolarGrid stroke="rgba(247, 231, 206, 0.18)" />
                   <PolarAngleAxis
                     dataKey="stat"
-                    tick={{ fill: "#c9b8a0", fontSize: 11 }}
+                    tick={{ fill: "#D4C4AE", fontSize: 11 }}
                   />
                   <PolarRadiusAxis
                     angle={90}
@@ -618,16 +616,16 @@ export function HomeDashboard({
                   <Radar
                     name="Pool"
                     dataKey="league"
-                    stroke="rgba(212, 184, 150, 0.95)"
-                    fill="rgba(212, 184, 150, 0.28)"
+                    stroke="rgba(247, 231, 206, 0.95)"
+                    fill="rgba(247, 231, 206, 0.28)"
                     fillOpacity={0.55}
                   />
                   <Tooltip
                     contentStyle={{
                       background: "rgba(22, 22, 24, 0.92)",
-                      border: "1px solid rgba(212, 184, 150, 0.35)",
+                      border: "1px solid rgba(247, 231, 206, 0.35)",
                       borderRadius: 8,
-                      color: "#f2ebe3",
+                      color: "#FFFCF8",
                     }}
                     formatter={(value: number | string, _n, item) => {
                       const key = (item?.payload as { key?: RadarStatKey })?.key;

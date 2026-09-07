@@ -806,9 +806,6 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
         } as CSSProperties
       }
     >
-      <div className={styles.glowOrange} aria-hidden />
-      <div className={styles.glowCyan} aria-hidden />
-      <div className={styles.glowMagenta} aria-hidden />
 
       <button
         type="button"
@@ -943,7 +940,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
             </p>
           ) : null}
           {/* 1) Game histogram (Bar columns) — X = game_index / game_num; DNP = empty */}
-          <section className={styles.panel} aria-label="Game chart">
+          <section className={`${styles.panel} ${styles.panelHero}`} aria-label="Game chart">
             <h2 className={styles.panelTitle}>
               {selected.full_name} · game-by-game
             </h2>

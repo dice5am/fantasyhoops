@@ -39,7 +39,6 @@ export default async function InsightDetailPage({
 
   return (
     <main className={styles.page}>
-      <div className={styles.glow} aria-hidden />
       <p className={styles.back}>
         <Link href="/insight">← All insights</Link>
       </p>

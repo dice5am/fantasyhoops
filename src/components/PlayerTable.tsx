@@ -266,13 +266,6 @@ export function PlayerTable({
 
   return (
     <div className={`${styles.wrap}${compact ? ` ${styles.compact}` : ""}`}>
-      {!compact ? (
-        <>
-          <div className={styles.glowOrange} aria-hidden />
-          <div className={styles.glowCyan} aria-hidden />
-          <div className={styles.glowMagenta} aria-hidden />
-        </>
-      ) : null}
 
       <header className={styles.header}>
         <div>
