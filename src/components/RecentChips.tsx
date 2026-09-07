@@ -6,6 +6,7 @@ import {
   readRecentPlayers,
   type RecentPlayer,
 } from "@/lib/recentPlayers";
+import { formatShortName } from "@/lib/formatName";
 import styles from "./RecentChips.module.css";
 
 type Props = {
@@ -63,7 +64,7 @@ export function RecentChips({ activePlayerId, accent }: Props) {
                 router.replace(`/player?${params.toString()}`, { scroll: false });
               }}
             >
-              {p.full_name}
+              {formatShortName(p.full_name)}
             </button>
           );
         })}

@@ -18,6 +18,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatAvg, formatPct } from "@/lib/format";
+import { formatShortName } from "@/lib/formatName";
 import type {
   SeasonId,
   SeasonPlayerAverage,
@@ -876,7 +877,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                     aria-selected={selected?.player_id === p.player_id}
                     onClick={() => pickPlayer(p)}
                   >
-                    {p.full_name}
+                    {formatShortName(p.full_name)}
                   </button>
                 ))}
               </div>
@@ -909,7 +910,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                   }
                   onClick={() => pickPlayer(p)}
                 >
-                  {p.full_name}
+                  {formatShortName(p.full_name)}
                   {selected?.player_id === p.player_id && displayTeam
                     ? ` · ${displayTeam}`
                     : ""}

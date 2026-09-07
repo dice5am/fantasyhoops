@@ -20,6 +20,7 @@ import {
   ZAxis,
 } from "recharts";
 import { formatAvg, formatPct } from "@/lib/format";
+import { formatShortName } from "@/lib/formatName";
 import type { LeagueContextPayload } from "@/lib/leagueAggregates";
 import {
   RADAR_NORM_NOTE,
@@ -115,7 +116,7 @@ function CondensedScoreBoard({
                   style={{ background: "rgba(212, 184, 150, 0.85)" }}
                   aria-hidden
                 />
-                <span className={styles.leaderName}>{r.full_name}</span>
+                <span className={styles.leaderName}>{formatShortName(r.full_name)}</span>
                 <span className={styles.leaderVal}>{fmtScore(scoreOf(r))}</span>
               </Link>
             </li>
@@ -181,7 +182,8 @@ export function HomeDashboard({
     if (!fantasy?.rows.length) return [];
     return fantasy.rows.map((r) => ({
       player_id: r.player_id,
-      name: r.full_name,
+      name: formatShortName(r.full_name),
+      full_name: r.full_name,
       off: r.score_off,
       def: r.score_def,
       min: r.avg_min,

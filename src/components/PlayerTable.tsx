@@ -12,6 +12,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatAvg, formatPct } from "@/lib/format";
+import { formatShortName } from "@/lib/formatName";
 import { nameMatches } from "@/lib/normalize";
 import type {
   SeasonId,
@@ -74,8 +75,9 @@ export function PlayerTable({
                 href={href}
                 className={styles.playerLink}
                 onClick={(e) => e.stopPropagation()}
+                title={row.full_name}
               >
-                {info.getValue<string>()}
+                {formatShortName(row.full_name)}
                 {!compact ? (
                   <span className={styles.rowHint} aria-hidden>
                     → profile
