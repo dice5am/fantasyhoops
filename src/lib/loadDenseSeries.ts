@@ -7,6 +7,7 @@ import type {
   DenseSeasonTypeScope,
   GetDensePlayerGamesParams,
 } from "@/types/dense_game_series";
+import { teamAbbrFromTeamId } from "@/lib/teamColors";
 
 /**
  * Dense series loader. Same hyparquet + mtime cache pattern as
@@ -110,10 +111,16 @@ function mapRow(raw: Record<string, unknown>): DenseGameSeriesRow {
     game_id: toNullableString(raw.game_id),
     game_date: formatGameDate(raw.game_date),
     team_id: toNullableString(raw.team_id),
-    team_abbreviation:
-      "team_abbreviation" in raw
-        ? toNullableString(raw.team_abbreviation)
-        : null,
+    // Dense parquet currently ships team_id only; map → TeamAbbr for chart strokes.
+    // Prefer explicit column when Data backfills; else resolve from official NBA team_id.
+    team_abbreviation: (() => {
+      const fromCol =
+        "team_abbreviation" in raw
+          ? toNullableString(raw.team_abbreviation)
+          : null;
+      if (fromCol) return fromCol;
+      return teamAbbrFromTeamId(toNullableString(raw.team_id));
+    })(),
     is_played,
     min: nullIfUnplayed(raw.min),
     pts: nullIfUnplayed(raw.pts),
