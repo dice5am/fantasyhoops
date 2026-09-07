@@ -10,18 +10,24 @@ status: ready
 
 # How sticky are fantasy ranks year to year?
 
-**Takeaway:** Prior-season **O1** rank is a solid draft anchor inside the top-250 minutes pool, not a lock. Year-over-year Spearman ρ for `rank_o1` runs about **0.72–0.83** (average **~0.77**). Roughly **two-thirds to four-fifths** of overlapping top-50 players stay top-50; the typical absolute O1 move is about **24–30** spots.
+**Takeaway:** Prior-season **O1** rank is a solid draft anchor inside the top-250 minutes pool, not a lock. Year-over-year Spearman ρ for overall rank runs about **0.72–0.83** (average **~0.77**). Roughly **two-thirds to four-fifths** of overlapping top-50 players stay top-50; the typical absolute O1 move is about **24–30** spots.
 
 ## Method
 
-- **Source:** `player_fantasy_scores` (read-only).
-- **Scope:** `reg_only` only.
-- **Pool:** top-250 by `avg_min` (already in the mart).
+- **Source:** player_fantasy_scores mart (read-only).
+- **Scope:** reg_only only.
+- **Pool:** top-250 by average minutes (already in the mart).
 - **Seasons:** 2021-22 → 2025-26.
 - **Universe:** players in **both** seasons’ pools for each consecutive pair.
-- **Metrics:** Spearman ρ on `rank_o1` / `rank_off` / `rank_def` / `rank_eff`; share staying top-50 / top-100 by O1; median |Δrank_o1|.
+- **Metrics:** Spearman ρ on overall / offense / defense / efficiency ranks; share staying top-50 / top-100 by O1; median absolute O1 rank change.
 
-### Median GP (`reg_only`)
+Rank columns used:
+
+```
+rank_o1, rank_off, rank_def, rank_eff
+```
+
+### Median GP (reg_only)
 
 | Season | Median GP |
 | --- | ---: |
@@ -35,7 +41,7 @@ status: ready
 
 ## Consecutive-pair summary
 
-| Pair | n overlap | ρ O1 | ρ OFF | ρ DEF | ρ EFF | Stay top-50 | Stay top-100 | Med \|ΔO1\| |
+| Pair | n overlap | ρ O1 | ρ OFF | ρ DEF | ρ EFF | Stay top-50 | Stay top-100 | Med abs ΔO1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 2021-22→2022-23 | 185 | 0.83 | 0.90 | 0.90 | 0.72 | 81% | 79% | 24 |
 | 2022-23→2023-24 | 196 | 0.80 | 0.88 | 0.86 | 0.76 | 70% | 79% | 28 |
@@ -48,7 +54,7 @@ status: ready
 - Stickiness **softens slightly** toward more recent pairs (ρ O1 0.83 → 0.72).
 - Latest pair has the **smallest overlap** (n = 171).
 
-## Example movers (Δrank_o1; negative = improved)
+## Example movers (negative Δ = improved O1 rank)
 
 Illustrative — role, injury, and minutes can dominate “skill” swings:
 
@@ -69,4 +75,4 @@ Illustrative — role, injury, and minutes can dominate “skill” swings:
 - No age / experience / size yet — those Insights come after cheap bios land.
 - Playoff-only stability is a separate question (not in this post).
 
-*Internal prep mirrored from `docs/analyst-prep-rank-stability.md` (reg_only, five-season mart).*
+*Evidence from five-season reg_only top-250 fantasy score ranks.*
