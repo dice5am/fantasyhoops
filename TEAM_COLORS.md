@@ -19,7 +19,7 @@ Very dark primaries (e.g. Brooklyn black, deep navies) use a **lightness-nudged*
 ## Resolution rules
 - Per season: `team_abbreviation` with most GP among `min > 0` games that season (ties → lex first abbr).
 - Display / recent accents: most recent season’s primary team.
-- Chart/radar/metric season strokes: that season’s `chartPrimary` hue + brightness-by-recency (newest brightest). Not player-hash hue; not app neon blue.
+- Chart/radar/metric season strokes: **most-recent-team** `chartPrimary` hue (one hue) + brightness lock among selected seasons (newest=100% → oldest=50%, linear middles; up to 5). Not player-hash hue; not app neon blue.
 
 ## All 30 teams
 

@@ -23,6 +23,7 @@ import {
   SEASON_OPTIONS,
 } from "@/types/season_player_averages";
 import styles from "./PlayerTable.module.css";
+import { SeasonSelect } from "@/components/SeasonSelect";
 
 type Props = {
   rows: SeasonPlayerAverage[];
@@ -283,18 +284,12 @@ export function PlayerTable({
           </p>
         </div>
         <div className={styles.controls}>
-          <div className={styles.seg} role="group" aria-label="Season">
-            {SEASON_OPTIONS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={season === s ? styles.active : undefined}
-                onClick={() => setSeason(s)}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          <SeasonSelect
+            options={SEASON_OPTIONS}
+            value={season}
+            onChange={(s) => setSeason(s)}
+            label="Season"
+          />
           <div className={styles.seg} role="group" aria-label="Season type scope">
             {SCOPE_OPTIONS.map((opt) => (
               <button

@@ -11,6 +11,11 @@ const TABS = [
     label: "Player",
     match: (p: string) => p.startsWith("/player"),
   },
+  {
+    href: "/insight",
+    label: "Insight",
+    match: (p: string) => p.startsWith("/insight"),
+  },
 ] as const;
 
 export function AppNav() {

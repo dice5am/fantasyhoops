@@ -211,7 +211,9 @@ export const FALLBACK_CHART_STROKE = "#94a3b8";
 
 /**
  * Recency brightness on a single hue (from team chartPrimary).
- * Newest → brightest; older → stepped dimmer. Same curve as prior player-hue helper.
+ * Brightness lock among selected seasons: newest = 100% opacity/brightness,
+ * oldest = 50%, linear middles. Team hue unchanged (most-recent-team one hue).
+ * Supports up to MAX_SELECTED_SEASONS (5).
  */
 export function withRecencyBrightness(
   hex: string,
@@ -219,24 +221,13 @@ export function withRecencyBrightness(
   seasonCount: number
 ): string {
   const hue = hexToHue(hex);
-  const n = seasonCount;
-  let light: number;
-  let alpha: number;
-  let sat: number;
-  if (n <= 1) {
-    light = 58;
-    alpha = 1;
-    sat = 88;
-  } else if (n === 2) {
-    light = rankFromNewest === 0 ? 60 : 42;
-    alpha = rankFromNewest === 0 ? 1 : 0.72;
-    sat = rankFromNewest === 0 ? 90 : 78;
-  } else {
-    light = rankFromNewest === 0 ? 62 : rankFromNewest === 1 ? 48 : 36;
-    alpha = rankFromNewest === 0 ? 1 : rankFromNewest === 1 ? 0.78 : 0.55;
-    sat = rankFromNewest === 0 ? 92 : rankFromNewest === 1 ? 82 : 70;
-  }
-  return `hsla(${Math.round(hue)}, ${sat}%, ${light}%, ${alpha})`;
+  const n = Math.max(1, seasonCount);
+  const factor =
+    n <= 1 ? 1 : 1 - (Math.max(0, rankFromNewest) / (n - 1)) * 0.5;
+  // Fixed sat/light so the linear factor alone carries opacity/brightness.
+  const sat = 88;
+  const light = 58;
+  return `hsla(${Math.round(hue)}, ${sat}%, ${light}%, ${factor})`;
 }
 
 /**

@@ -80,7 +80,7 @@ function mapGame(raw: Record<string, unknown>): PlayerGameLog {
 export type GetPlayerGamesParams = {
   player_id: string;
   scope?: SeasonTypeScope;
-  /** Max 3 seasons enforced by caller / API. */
+  /** Max seasons (MAX_SELECTED_SEASONS) enforced by caller / API. */
   seasons?: string[];
 };
 

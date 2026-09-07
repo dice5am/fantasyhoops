@@ -1,5 +1,5 @@
 import type { SeasonId, SeasonTypeScope } from "@/types/season_player_averages";
-import { SEASON_OPTIONS } from "@/types/season_player_averages";
+import { MAX_SELECTED_SEASONS, SEASON_OPTIONS } from "@/types/season_player_averages";
 
 export type ChartStatKey =
   | "pts"
@@ -35,7 +35,7 @@ export function parseSeasonsParam(raw: string | null): SeasonId[] | null {
   const uniq: SeasonId[] = [];
   for (const s of parts) {
     if (!uniq.includes(s)) uniq.push(s);
-    if (uniq.length >= 3) break;
+    if (uniq.length >= MAX_SELECTED_SEASONS) break;
   }
   return uniq.length ? uniq : null;
 }

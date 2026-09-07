@@ -1,6 +1,6 @@
 import type { SeasonTypeScope } from "@/types/season_player_averages";
 import { DEFAULT_SCOPE, DEFAULT_SEASON } from "@/lib/loadMart";
-import { SEASON_OPTIONS } from "@/types/season_player_averages";
+import { MAX_SELECTED_SEASONS, SEASON_OPTIONS } from "@/types/season_player_averages";
 
 /**
  * UI-facing scope parse: reg_plus_playoffs falls back to reg_only.
@@ -21,7 +21,7 @@ export function parseSeason(v: string | null | undefined): string {
 
 export function parseSeasonsCsv(
   v: string | null | undefined,
-  max = 3
+  max = MAX_SELECTED_SEASONS
 ): string[] {
   if (!v) return [DEFAULT_SEASON];
   const parts = v

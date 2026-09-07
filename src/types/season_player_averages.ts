@@ -16,10 +16,24 @@ export type SeasonTypeScope =
   | "reg_plus_playoffs"
   | "playoff_only";
 
-/** Supported season selector values. */
-export type SeasonId = "2023-24" | "2024-25" | "2025-26";
+/** Max seasons selectable in chart multi-select / CSV parsers / APIs. */
+export const MAX_SELECTED_SEASONS = 5;
 
-export const SEASON_OPTIONS: SeasonId[] = ["2023-24", "2024-25", "2025-26"];
+/** Supported season selector values (UI options) — 5yr mart (Data published). */
+export type SeasonId =
+  | "2021-22"
+  | "2022-23"
+  | "2023-24"
+  | "2024-25"
+  | "2025-26";
+
+export const SEASON_OPTIONS: SeasonId[] = [
+  "2021-22",
+  "2022-23",
+  "2023-24",
+  "2024-25",
+  "2025-26",
+];
 
 /**
  * UI scope options only — no reg_plus_playoffs in the product chrome.

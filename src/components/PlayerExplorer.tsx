@@ -24,10 +24,12 @@ import type {
   SeasonTypeScope,
 } from "@/types/season_player_averages";
 import {
+  MAX_SELECTED_SEASONS,
   SCOPE_CHART_LABELS,
   SCOPE_OPTIONS,
   SEASON_OPTIONS,
 } from "@/types/season_player_averages";
+import { SeasonMultiSelect } from "@/components/SeasonMultiSelect";
 import styles from "./PlayerExplorer.module.css";
 import {
   buildPlayerUrl,
@@ -635,20 +637,6 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
     writePlayerUrl({ player: p });
   }
 
-  function toggleSeason(s: SeasonId) {
-    let next: SeasonId[] | null = null;
-    setChartSeasons((prev) => {
-      if (prev.includes(s)) {
-        if (prev.length === 1) return prev;
-        next = prev.filter((x) => x !== s);
-        return next;
-      }
-      if (prev.length >= 3) return prev;
-      next = [...prev, s].sort() as SeasonId[];
-      return next;
-    });
-    if (next) writePlayerUrl({ seasons: next });
-  }
 
   function onScopeChange(next: SeasonTypeScope) {
     setChartScope(next);
@@ -956,8 +944,8 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               {selected.full_name} · game-by-game
             </h2>
             <p className={styles.meta}>
-              Scope <code>{SCOPE_CHART_LABELS[chartScope]}</code> · up to 3
-              seasons · null≠0 · x-axis{" "}
+              Scope <code>{SCOPE_CHART_LABELS[chartScope]}</code> · up to{" "}
+              {MAX_SELECTED_SEASONS} seasons · null≠0 · x-axis{" "}
               <code>
                 {gamesSource === "dense" ? "game_index" : "game_num"}
               </code>
@@ -969,23 +957,16 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
             </p>
 
             <div className={`${styles.controls} ${styles.chartControls}`}>
-              <div className={styles.seg} role="group" aria-label="Chart seasons">
-                {SEASON_OPTIONS.map((s) => {
-                  const on = chartSeasons.includes(s);
-                  const atCap = !on && chartSeasons.length >= 3;
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      className={on ? styles.active : undefined}
-                      disabled={atCap}
-                      onClick={() => toggleSeason(s)}
-                    >
-                      {s}
-                    </button>
-                  );
-                })}
-              </div>
+              <SeasonMultiSelect
+                options={SEASON_OPTIONS}
+                value={chartSeasons}
+                onChange={(next) => {
+                  setChartSeasons(next);
+                  writePlayerUrl({ seasons: next });
+                }}
+                max={MAX_SELECTED_SEASONS}
+                label="Chart seasons"
+              />
               <div
                 className={styles.seg}
                 role="group"
@@ -1168,7 +1149,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
             </p>
           </section>
 
-          {/* 2) Radar — Recharts RadarChart, ≤3 season polygons */}
+          {/* 2) Radar — Recharts RadarChart, ≤5 season polygons */}
           <section className={styles.panel} aria-label="9-cat radar">
             <h2 className={styles.panelTitle}>9-cat radar</h2>
             <p className={styles.meta}>

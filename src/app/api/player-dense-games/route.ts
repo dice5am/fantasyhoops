@@ -7,7 +7,7 @@ import {
   getDensePlayerGames,
 } from "@/lib/loadDenseSeries";
 import { parseScope } from "@/lib/scope";
-import { SEASON_OPTIONS } from "@/types/season_player_averages";
+import { MAX_SELECTED_SEASONS, SEASON_OPTIONS } from "@/types/season_player_averages";
 
 export const runtime = "nodejs";
 
@@ -19,7 +19,7 @@ function parseSeasons(v: string | null): string[] {
     .filter(Boolean);
   const allowed = new Set(SEASON_OPTIONS as string[]);
   const filtered = parts.filter((s) => allowed.has(s));
-  return (filtered.length > 0 ? filtered : [...SEASON_OPTIONS]).slice(0, 3);
+  return (filtered.length > 0 ? filtered : [...SEASON_OPTIONS]).slice(0, MAX_SELECTED_SEASONS);
 }
 
 /**

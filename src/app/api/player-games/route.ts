@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPlayerGameLogs } from "@/lib/loadGameLogs";
 import { parseScope } from "@/lib/scope";
-import { SEASON_OPTIONS } from "@/types/season_player_averages";
+import { MAX_SELECTED_SEASONS, SEASON_OPTIONS } from "@/types/season_player_averages";
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ function parseSeasons(v: string | null): string[] {
     .filter(Boolean);
   const allowed = new Set(SEASON_OPTIONS as string[]);
   const filtered = parts.filter((s) => allowed.has(s));
-  const capped = (filtered.length > 0 ? filtered : [...SEASON_OPTIONS]).slice(0, 3);
+  const capped = (filtered.length > 0 ? filtered : [...SEASON_OPTIONS]).slice(0, MAX_SELECTED_SEASONS);
   return capped;
 }
 

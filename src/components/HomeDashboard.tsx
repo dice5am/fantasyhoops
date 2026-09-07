@@ -36,6 +36,7 @@ import type {
 } from "@/types/fantasy_score";
 import type { SeasonTypeScope } from "@/types/season_player_averages";
 import { SCOPE_OPTIONS, SEASON_OPTIONS } from "@/types/season_player_averages";
+import { SeasonSelect } from "@/components/SeasonSelect";
 import {
   DEFAULT_TOP_PCT,
   TOP_PCT_MAX,
@@ -308,18 +309,12 @@ export function HomeDashboard({
           </p>
         </div>
         <div className={styles.controls}>
-          <div className={styles.seg} role="group" aria-label="Season">
-            {SEASON_OPTIONS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={season === s ? styles.active : undefined}
-                onClick={() => applyFilters(s, uiScope, pct)}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          <SeasonSelect
+            options={SEASON_OPTIONS}
+            value={season}
+            onChange={(s) => applyFilters(s, uiScope, pct)}
+            label="Season"
+          />
           <div className={styles.seg} role="group" aria-label="Season type scope">
             {SCOPE_OPTIONS.map((opt) => (
               <button
