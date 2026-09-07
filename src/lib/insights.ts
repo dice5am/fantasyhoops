@@ -28,6 +28,24 @@ function isNonEmptyString(v: unknown): v is string {
   return typeof v === "string" && v.trim().length > 0;
 }
 
+/** gray-matter/js-yaml may parse unquoted YYYY-MM-DD as a Date; coerce to calendar string. */
+function normalizeDate(v: unknown): string | null {
+  if (v instanceof Date && !Number.isNaN(v.getTime())) {
+    const y = v.getUTCFullYear();
+    const m = String(v.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(v.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (DATE_RE.test(s)) return s;
+    // ISO datetime → calendar date prefix
+    const prefix = s.slice(0, 10);
+    if (DATE_RE.test(prefix)) return prefix;
+  }
+  return null;
+}
+
 function normalizeTags(v: unknown): string[] | undefined {
   if (v == null) return undefined;
   if (!Array.isArray(v)) return undefined;
@@ -49,7 +67,8 @@ function parseInsightFile(filePath: string): InsightPost | null {
   const stem = path.basename(filePath, ".md");
 
   if (!isNonEmptyString(data.title)) return null;
-  if (!isNonEmptyString(data.date) || !DATE_RE.test(data.date.trim())) return null;
+  const date = normalizeDate(data.date);
+  if (!date || !DATE_RE.test(date)) return null;
   if (!isNonEmptyString(data.slug) || !SLUG_RE.test(data.slug.trim())) return null;
   if (!isNonEmptyString(data.summary)) return null;
   if (data.slug.trim() !== stem) return null;
@@ -59,7 +78,7 @@ function parseInsightFile(filePath: string): InsightPost | null {
 
   return {
     title: data.title.trim(),
-    date: data.date.trim(),
+    date,
     slug: data.slug.trim(),
     summary: data.summary.trim(),
     author,

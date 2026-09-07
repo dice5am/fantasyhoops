@@ -45,6 +45,7 @@ content/insights/{slug}.md
 
 - Server-side: `src/lib/insights.ts` reads `content/insights/*.md` via `fs` + `gray-matter`.
 - Parses required `title` / `date` / `slug` / `summary` and optional `author` / `tags` / `status`.
+- YAML unquoted dates (e.g. `date: 2026-09-07`) may parse as a JS `Date`; the loader coerces `Date` and ISO strings to `YYYY-MM-DD` before validation.
 - `getInsightPosts()` → public posts sorted by `date` descending (then slug).
 - `getInsightBySlug(slug)` → one public post or `null`.
 - Invalid files are skipped (not thrown) so a bad draft cannot break the list.
