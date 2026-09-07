@@ -171,13 +171,13 @@ export function hexToHue(hex: string): number {
  * Ties → lexicographically first abbr (stable).
  */
 export function primaryTeamForSeason(
-  games: { season: string; min: number; team_abbreviation?: string | null }[],
+  games: { season: string; min: number | null; team_abbreviation?: string | null }[],
   season: string
 ): TeamAbbr | null {
   const counts = new Map<string, number>();
   for (const g of games) {
     if (g.season !== season) continue;
-    if (!(g.min > 0)) continue;
+    if (g.min == null || !(g.min > 0)) continue;
     const abbr = g.team_abbreviation?.trim();
     if (!abbr || !isTeamAbbr(abbr)) continue;
     counts.set(abbr, (counts.get(abbr) ?? 0) + 1);
@@ -196,7 +196,7 @@ export function primaryTeamForSeason(
 
 /** Most recent season’s primary team (for display / recent chips). */
 export function primaryTeamRecent(
-  games: { season: string; min: number; team_abbreviation?: string | null }[]
+  games: { season: string; min: number | null; team_abbreviation?: string | null }[]
 ): TeamAbbr | null {
   const seasons = [...new Set(games.map((g) => g.season))].sort();
   for (let i = seasons.length - 1; i >= 0; i--) {
@@ -245,7 +245,7 @@ export function withRecencyBrightness(
  * season by that year's team.
  */
 export function seasonTeamStrokeColors(
-  games: { season: string; min: number; team_abbreviation?: string | null }[],
+  games: { season: string; min: number | null; team_abbreviation?: string | null }[],
   seasons: string[]
 ): Record<string, string> {
   const sorted = [...seasons].sort();
@@ -265,7 +265,7 @@ export function seasonTeamStrokeColors(
 
 /** Display / recent-chip accent = most recent season's team primary (brand, not chart nudge). */
 export function displayTeamPrimary(
-  games: { season: string; min: number; team_abbreviation?: string | null }[]
+  games: { season: string; min: number | null; team_abbreviation?: string | null }[]
 ): string | null {
   const abbr = primaryTeamRecent(games);
   const token = getTeamColors(abbr);
@@ -273,7 +273,7 @@ export function displayTeamPrimary(
 }
 
 export function displayTeamChartPrimary(
-  games: { season: string; min: number; team_abbreviation?: string | null }[]
+  games: { season: string; min: number | null; team_abbreviation?: string | null }[]
 ): string | null {
   const abbr = primaryTeamRecent(games);
   const token = getTeamColors(abbr);

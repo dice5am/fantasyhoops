@@ -56,26 +56,38 @@ import {
 
 type PlayerHit = { player_id: string; full_name: string };
 
+/** Chart game row — dense (preferred) or curated fallback. */
 type GameRow = {
-  game_id: string;
+  game_id: string | null;
   player_id: string;
-  full_name: string;
+  full_name?: string;
   season: string;
-  season_type: string;
-  game_date: string;
-  min: number;
-  pts: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  tov: number;
-  fg3m: number;
+  season_type?: string;
+  season_type_scope?: string;
+  game_date: string | null;
+  /** Dense axis index; absent on curated played-sequence fallback. */
+  game_index?: number | null;
+  is_played?: boolean;
+  min: number | null;
+  pts: number | null;
+  reb: number | null;
+  ast: number | null;
+  stl: number | null;
+  blk: number | null;
+  tov: number | null;
+  fg3m: number | null;
   fg_pct: number | null;
   ft_pct: number | null;
-  team_id: string;
-  team_abbreviation: string;
+  team_id: string | null;
+  team_abbreviation?: string | null;
 };
+
+type GamesSource = "dense" | "curated";
+
+function isPlayedGame(g: GameRow): boolean {
+  if (typeof g.is_played === "boolean") return g.is_played;
+  return g.min != null && g.min > 0;
+}
 
 type StatKey = RadarStatKey;
 
@@ -119,7 +131,9 @@ function gameStat(g: GameRow, key: StatKey): number | null {
     if (v == null || Number.isNaN(v)) return null;
     return v * 100;
   }
-  return g[key];
+  const v = g[key];
+  if (v == null || Number.isNaN(Number(v))) return null;
+  return Number(v);
 }
 
 function avgForStat(
@@ -191,6 +205,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
   );
 
   const [games, setGames] = useState<GameRow[]>([]);
+  const [gamesSource, setGamesSource] = useState<GamesSource | null>(null);
   const [gamesLoading, setGamesLoading] = useState(false);
   const [gamesError, setGamesError] = useState<string | null>(null);
   const [avgBySeason, setAvgBySeason] = useState<
@@ -466,10 +481,11 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
     };
   }, [query, runSearch]);
 
-  // Load games when player / chart controls change
+  // Prefer dense game_index series; curated only if dense parquet missing (503).
   useEffect(() => {
     if (!selected) {
       setGames([]);
+      setGamesSource(null);
       setGamesError(null);
       setGamesLoading(false);
       return;
@@ -478,24 +494,44 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
     setGamesLoading(true);
     setGamesError(null);
     const seasons = chartSeasons.join(",");
-    const url = `/api/player-games?player_id=${encodeURIComponent(
+    const q = `player_id=${encodeURIComponent(
       selected.player_id
     )}&seasons=${encodeURIComponent(seasons)}&scope=${encodeURIComponent(
       chartScope
     )}`;
-    fetch(url)
-      .then(async (r) => {
-        if (!r.ok) {
-          const body = await r.json().catch(() => ({}));
+    const denseUrl = `/api/player-dense-games?${q}`;
+    const curatedUrl = `/api/player-games?${q}`;
+
+    (async () => {
+      try {
+        const denseRes = await fetch(denseUrl);
+        if (denseRes.ok) {
+          const data = await denseRes.json();
+          if (cancelled) return;
+          setGames(Array.isArray(data.rows) ? data.rows : []);
+          setGamesSource("dense");
+          setGamesError(null);
+          return;
+        }
+        if (denseRes.status !== 503) {
+          const body = await denseRes.json().catch(() => ({}));
           throw new Error(
             typeof body.error === "string"
               ? body.error
-              : `Games request failed (${r.status})`
+              : `Dense games request failed (${denseRes.status})`
           );
         }
-        return r.json();
-      })
-      .then((data) => {
+        // Dense not published — temporary curated fallback (played-sequence).
+        const curatedRes = await fetch(curatedUrl);
+        if (!curatedRes.ok) {
+          const body = await curatedRes.json().catch(() => ({}));
+          throw new Error(
+            typeof body.error === "string"
+              ? body.error
+              : `Games request failed (${curatedRes.status})`
+          );
+        }
+        const data = await curatedRes.json();
         if (cancelled) return;
         setGames(
           Array.isArray(data.rows)
@@ -504,18 +540,20 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               ? data.games
               : []
         );
+        setGamesSource("curated");
         setGamesError(null);
-      })
-      .catch((err) => {
+      } catch (err) {
         if (cancelled) return;
         setGames([]);
+        setGamesSource(null);
         setGamesError(
           err instanceof Error ? err.message : "Failed to load games"
         );
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setGamesLoading(false);
-      });
+      }
+    })();
+
     return () => {
       cancelled = true;
     };
@@ -623,16 +661,15 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
   }
 
   /**
-   * Line chart consistency (Option B):
-   * - Regular scopes: X domain always 1–82 (pad nulls).
-   * - playoff_only: X domain always 1–28 (pad nulls; not real-length-only, not fake 82).
-   * - DNP / not-reached / min<=0 / missing → null (never 0).
-   * - Solid across adjacent played; dashed connectors across null gaps.
+   * Dense preferred: X = game_index (1–82 reg / 1–28 PO), solid on played,
+   * dotted hold-last connectors across nulls; null≠0.
+   * Curated fallback only if dense missing — played-sequence i+1 (no fake densify claim).
    */
   const REG_X_MAX = 82;
   const PLAYOFF_X_MAX = 28;
 
   const chartData = useMemo(() => {
+    const useDense = gamesSource === "dense";
     const bySeason = new Map<string, GameRow[]>();
     for (const g of games) {
       let list = bySeason.get(g.season);
@@ -644,20 +681,32 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
     }
     const indexed = new Map<string, Map<number, GameRow>>();
     for (const season of chartSeasons) {
-      const list = (bySeason.get(season) ?? [])
-        .slice()
-        .sort((a, b) => {
-          if (a.game_date < b.game_date) return -1;
-          if (a.game_date > b.game_date) return 1;
-          return a.game_id < b.game_id ? -1 : a.game_id > b.game_id ? 1 : 0;
-        });
+      const list = (bySeason.get(season) ?? []).slice();
       const m = new Map<number, GameRow>();
-      list.forEach((g, i) => {
-        m.set(i + 1, g);
-      });
+      if (useDense) {
+        list.sort((a, b) => (a.game_index ?? 0) - (b.game_index ?? 0));
+        for (const g of list) {
+          if (g.game_index != null && Number.isFinite(g.game_index)) {
+            m.set(Number(g.game_index), g);
+          }
+        }
+      } else {
+        list.sort((a, b) => {
+          const da = a.game_date ?? "";
+          const db = b.game_date ?? "";
+          if (da < db) return -1;
+          if (da > db) return 1;
+          const ia = a.game_id ?? "";
+          const ib = b.game_id ?? "";
+          return ia < ib ? -1 : ia > ib ? 1 : 0;
+        });
+        // Temporary curated fallback only — not densify.
+        list.forEach((g, i) => {
+          m.set(i + 1, g);
+        });
+      }
       indexed.set(season, m);
     }
-    // Fixed shared domains for multi-player overlay alignment.
     const xMax =
       chartScope === "playoff_only" ? PLAYOFF_X_MAX : REG_X_MAX;
     const rows: Record<string, string | number | null>[] = [];
@@ -665,11 +714,11 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
       const row: Record<string, string | number | null> = { game_num };
       for (const season of chartSeasons) {
         const g = indexed.get(season)?.get(game_num);
-        if (!g || !(g.min > 0)) {
+        if (!g || !isPlayedGame(g)) {
           // DNP / not-reached / missing → omit (undefined), never 0 — Recharts null→0 trap
           row[season] = undefined as unknown as null;
-          row[`date_${season}`] = g ? g.game_date : null;
-          row[`dnp_${season}`] = g && !(g.min > 0) ? 1 : null;
+          row[`date_${season}`] = g?.game_date ?? null;
+          row[`dnp_${season}`] = g && !isPlayedGame(g) ? 1 : null;
         } else {
           const v = gameStat(g, stat);
           row[season] =
@@ -734,7 +783,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
       }
     }
     return rows;
-  }, [games, chartSeasons, chartScope, stat]);
+  }, [games, gamesSource, chartSeasons, chartScope, stat]);
 
   const xDomainMax = useMemo(() => {
     return chartScope === "playoff_only" ? PLAYOFF_X_MAX : REG_X_MAX;
@@ -901,15 +950,22 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               Outside active top-250 pool
             </p>
           ) : null}
-          {/* 1) Line chart — X = game_num */}
+          {/* 1) Line chart — X = game_index (dense) or game_num (curated fallback) */}
           <section className={styles.panel} aria-label="Game chart">
             <h2 className={styles.panelTitle}>
               {selected.full_name} · game-by-game
             </h2>
             <p className={styles.meta}>
               Scope <code>{SCOPE_CHART_LABELS[chartScope]}</code> · up to 3
-              seasons · skip <code>min≤0</code> · x-axis{" "}
-              <code>game_num</code>
+              seasons · null≠0 · x-axis{" "}
+              <code>
+                {gamesSource === "dense" ? "game_index" : "game_num"}
+              </code>
+              {gamesSource === "dense"
+                ? " (dense)"
+                : gamesSource === "curated"
+                  ? " (curated fallback)"
+                  : ""}
             </p>
 
             <div className={`${styles.controls} ${styles.chartControls}`}>
@@ -1098,8 +1154,13 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
             <p className={styles.meta} style={{ marginTop: "0.75rem" }}>
               {gamesLoading
                 ? "Loading…"
-                : `${games.length} games loaded`}{" "}
-              · x-axis <code>game_num</code>
+                : gamesSource === "dense"
+                  ? `${games.filter((g) => isPlayedGame(g)).length} played / ${games.length} dense slots`
+                  : `${games.length} games loaded`}{" "}
+              · x-axis{" "}
+              <code>
+                {gamesSource === "dense" ? "game_index" : "game_num"}
+              </code>
               {chartScope === "playoff_only"
                 ? " (playoffs: fixed 1–28; DNP/not-reached = null; dashed gaps)"
                 : " (regular: fixed 1–82; solid played; dotted gaps; null≠0; newest season brightest)"}{" "}
