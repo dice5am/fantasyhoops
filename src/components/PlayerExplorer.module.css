@@ -166,6 +166,27 @@
   gap: 0.75rem;
 }
 
+
+/* Stats selection: single-line scroller (mobile + desktop chrome) */
+.statSeg {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  max-width: 100%;
+  width: 100%;
+}
+
+.statSeg button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.overflowBar {
+  transition: opacity 180ms ease;
+}
+
 .seg {
   display: inline-flex;
   flex-wrap: wrap;
@@ -578,12 +599,19 @@
     width: 100%;
     row-gap: 0.35rem;
   }
+  .statSeg {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    row-gap: 0;
+  }
   .seg button {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 0.55rem 0.7rem;
-    font-size: 0.84rem;
-    flex: 1 1 auto;
+    min-height: 40px;
+    min-width: 40px;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8rem;
+  }
+  .statSeg button {
+    flex: 0 0 auto;
   }
   .panel {
     padding: 0.85rem 0.75rem 1rem;
@@ -662,12 +690,19 @@
     gap: 0.25rem;
     width: 100%;
   }
+  .statSeg {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
   .seg button {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 0.5rem 0.55rem;
-    font-size: 0.78rem;
-    flex: 1 1 auto;
+    min-height: 40px;
+    min-width: 40px;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.74rem;
+  }
+  .statSeg button {
+    flex: 0 0 auto;
+    min-width: 0;
   }
   .chartBox {
     height: 220px;
@@ -942,12 +977,23 @@
   .seg {
     width: 100%;
     max-width: 100%;
+  }
+  .seg:not(.statSeg) {
     flex-wrap: wrap;
   }
+  .statSeg {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
   .seg button {
-    min-height: 44px;
-    min-width: 44px;
-    flex: 1 1 auto;
+    min-height: 40px;
+    min-width: 40px;
+  }
+  .statSeg button {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.72rem;
   }
   .searchWrap {
     width: 100%;

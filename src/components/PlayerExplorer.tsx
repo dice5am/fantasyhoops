@@ -6,12 +6,14 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
   Radar,
   RadarChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,13 +26,13 @@ import type {
   SeasonPlayerAverage,
   SeasonTypeScope,
 } from "@/types/season_player_averages";
+import type { LeagueAvgs } from "@/types/league_context";
 import {
-  MAX_SELECTED_SEASONS,
   SCOPE_CHART_LABELS,
   SCOPE_OPTIONS,
   SEASON_OPTIONS,
 } from "@/types/season_player_averages";
-import { SeasonMultiSelect } from "@/components/SeasonMultiSelect";
+import { SeasonSelect } from "@/components/SeasonSelect";
 import styles from "./PlayerExplorer.module.css";
 import {
   buildPlayerUrl,
@@ -54,6 +56,7 @@ import {
 } from "@/lib/teamColors";
 import { TeamMarkPip, teamMarkGlow } from "@/components/TeamMarkPip";
 import {
+  capChartYValue,
   chartYTicks,
   resolveChartYDomain,
 } from "@/lib/chartYAxis";
@@ -105,6 +108,160 @@ type StatKey = RadarStatKey;
 
 const SEARCH_MIN_LEN = 2;
 const SEARCH_DEBOUNCE_MS = 220;
+
+/** Champagne overflow mark (design pack v3 ladder). */
+const OVERFLOW_CHAMPAGNE = "#F7E7CE";
+const OVERFLOW_GLOW =
+  "0 0 10px rgba(247, 231, 206, 0.95), 0 0 18px rgba(247, 231, 206, 0.55)";
+
+
+/** Format true overflow value for pill / tooltip (display units). */
+function formatOverflowLabel(raw: number, isPct: boolean): string {
+  if (isPct) return `${raw.toFixed(0)}%`;
+  return Number.isInteger(raw) ? String(raw) : raw.toFixed(1);
+}
+
+/**
+ * Custom Bar shape: team chartPrimary fill capped at Y max.
+ * Overflow: champagne glow bloom + pop edge + ▲ chevron + true-value dark pill.
+ * Never extends axis; DNP stays null (no shape).
+ */
+function OverflowBarShape(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  fill?: string;
+  fillOpacity?: number;
+  payload?: Record<string, string | number | null>;
+  dataKey?: string;
+  isPct?: boolean;
+}) {
+  const {
+    x = 0,
+    y = 0,
+    width = 0,
+    height = 0,
+    fill = FALLBACK_CHART_STROKE,
+    fillOpacity = 1,
+    payload,
+    dataKey,
+    isPct = false,
+  } = props;
+  if (width <= 0 || height <= 0 || payload == null || !dataKey) return null;
+  const season = String(dataKey);
+  const raw = payload[`raw_${season}`];
+  const overflow = payload[`overflow_${season}`] === 1;
+  const visual = payload[season];
+  if (visual == null || typeof visual !== "number") return null;
+
+  const cx = x + width / 2;
+  const pillY = y - 18;
+  const glowFilterId = `ovf-glow-${season}-${payload.game_num ?? "x"}`;
+
+  return (
+    <g className={styles.overflowBar} aria-hidden={!overflow}>
+      {overflow ? (
+        <defs>
+          <filter
+            id={glowFilterId}
+            x="-80%"
+            y="-80%"
+            width="260%"
+            height="260%"
+          >
+            <feGaussianBlur stdDeviation="2.4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+      ) : null}
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill={fill}
+        fillOpacity={fillOpacity}
+        rx={1}
+        ry={1}
+        style={
+          overflow
+            ? {
+                filter: `url(#${glowFilterId})`,
+                transition: "filter 180ms ease, opacity 180ms ease",
+              }
+            : { transition: "opacity 180ms ease" }
+        }
+      />
+      {overflow ? (
+        <>
+          {/* 1–2px champagne pop edge at cap */}
+          <rect
+            x={x}
+            y={y}
+            width={width}
+            height={Math.min(2, height)}
+            fill="#FFFCF5"
+            fillOpacity={0.92}
+            style={{ transition: "opacity 180ms ease" }}
+          />
+          {/* soft champagne bloom under label */}
+          <ellipse
+            cx={cx}
+            cy={y}
+            rx={Math.max(width * 1.4, 8)}
+            ry={5}
+            fill="rgba(247, 231, 206, 0.55)"
+            style={{ transition: "opacity 180ms ease" }}
+          />
+          {/* ▲ chevron + true value on dark pill */}
+          <g
+            transform={`translate(${cx}, ${pillY})`}
+            style={{ transition: "opacity 180ms ease, transform 180ms ease" }}
+          >
+            <text
+              textAnchor="middle"
+              y={-10}
+              fill={OVERFLOW_CHAMPAGNE}
+              fontSize={8}
+              fontWeight={700}
+              style={{ textShadow: OVERFLOW_GLOW }}
+            >
+              ▲
+            </text>
+            <rect
+              x={-14}
+              y={-6}
+              width={28}
+              height={13}
+              rx={4}
+              ry={4}
+              fill="rgba(12, 14, 22, 0.92)"
+              stroke="rgba(247, 231, 206, 0.55)"
+              strokeWidth={0.75}
+            />
+            <text
+              textAnchor="middle"
+              y={4}
+              fill="#FFFCF5"
+              fontSize={9}
+              fontWeight={700}
+              fontFamily="ui-monospace, monospace"
+            >
+              {typeof raw === "number"
+                ? formatOverflowLabel(raw, isPct)
+                : ""}
+            </text>
+          </g>
+        </>
+      ) : null}
+    </g>
+  );
+}
+
 
 
 function parseSeasonsParam(raw: string | null): SeasonId[] {
@@ -223,6 +380,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
   >({});
   const [avgLoading, setAvgLoading] = useState(false);
   const [avgError, setAvgError] = useState<string | null>(null);
+  const [leagueAvgs, setLeagueAvgs] = useState<LeagueAvgs | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -636,6 +794,34 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
     };
   }, [selected, chartSeasons, chartScope]);
 
+  // League/pool 9-cat averages for radar underlay (API only — never client-invented).
+  useEffect(() => {
+    const season = chartSeasons[0];
+    if (!season) {
+      setLeagueAvgs(null);
+      return;
+    }
+    let cancelled = false;
+    const qs = new URLSearchParams();
+    qs.set("season", season);
+    qs.set("scope", chartScope);
+    qs.set("topPct", "100");
+    (async () => {
+      try {
+        const res = await fetch(`/api/league-context?${qs.toString()}`);
+        if (!res.ok) throw new Error(`league-context ${res.status}`);
+        const data = await res.json();
+        if (cancelled) return;
+        setLeagueAvgs((data.league_avgs as LeagueAvgs) ?? null);
+      } catch {
+        if (!cancelled) setLeagueAvgs(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chartSeasons, chartScope]);
+
   function pickPlayer(p: PlayerHit) {
     setSelected(p);
     setQuery(p.full_name);
@@ -713,12 +899,17 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
         if (!g || !isPlayedGame(g)) {
           // DNP / not-reached / missing → null empty slot (never 0)
           row[season] = null;
+          row[`raw_${season}`] = null;
+          row[`overflow_${season}`] = null;
           row[`date_${season}`] = g?.game_date ?? null;
           row[`dnp_${season}`] = g && !isPlayedGame(g) ? 1 : null;
         } else {
           const v = gameStat(g, stat);
-          row[season] =
-            v == null || Number.isNaN(Number(v)) ? null : v;
+          const capped = capChartYValue(stat, v);
+          // Visual bar height capped at fixed Y ceiling; raw kept for tooltip/label.
+          row[season] = capped.visual;
+          row[`raw_${season}`] = capped.raw;
+          row[`overflow_${season}`] = capped.overflow ? 1 : null;
           row[`date_${season}`] = g.game_date;
         }
       }
@@ -726,6 +917,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
     }
     // Histogram columns: played games have values; DNP / not-reached = null empty slot.
     // No gap connectors / dotted hold paths (CoS histogram BUILD GO).
+    // Overflow: visual capped at ceiling; axis never extends for a spike.
     return rows;
   }, [games, gamesSource, chartSeasons, chartScope, stat]);
 
@@ -744,9 +936,11 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
         const raw = avgForStat(bundle?.row, bundle?.avg_fg3m, opt.key);
         point[season] = normalizeRadarValue(opt.key, raw);
       }
+      const poolRaw = leagueAvgs ? leagueAvgs[opt.key] : null;
+      point.pool = normalizeRadarValue(opt.key, poolRaw);
       return point;
     });
-  }, [avgBySeason, chartSeasons]);
+  }, [avgBySeason, chartSeasons, leagueAvgs]);
 
   /** Most recent season's primary team (display / recent accents). */
   const displayTeam = useMemo(() => primaryTeamRecent(games), [games]);
@@ -771,16 +965,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
     [chartSeasons]
   );
 
-  const yDomain = useMemo(() => {
-    const vals: number[] = [];
-    for (const row of chartData) {
-      for (const s of chartSeasons) {
-        const v = row[s];
-        if (typeof v === "number" && Number.isFinite(v)) vals.push(v);
-      }
-    }
-    return resolveChartYDomain(stat, vals);
-  }, [chartData, chartSeasons, stat]);
+  const yDomain = useMemo(() => resolveChartYDomain(stat), [stat]);
 
   const yTicks = useMemo(
     () => chartYTicks(stat, yDomain[1]),
@@ -788,6 +973,16 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
   );
 
   const isPct = STAT_OPTIONS.find((s) => s.key === stat)?.pct === true;
+
+  /** Season average for selected stat — mart/API only (display units for chart). */
+  const seasonAvgY = useMemo(() => {
+    const season = chartSeasons[0];
+    if (!season) return null;
+    const bundle = avgBySeason[season];
+    const raw = avgForStat(bundle?.row, bundle?.avg_fg3m, stat);
+    if (raw == null || !Number.isFinite(Number(raw))) return null;
+    return isPct ? Number(raw) * 100 : Number(raw);
+  }, [avgBySeason, chartSeasons, stat, isPct]);
   const hasAnyAvg = chartSeasons.some((s) => avgBySeason[s]?.row);
   const showDropdown = open && query.trim().length >= SEARCH_MIN_LEN && hits.length > 0;
 
@@ -945,8 +1140,8 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               {selected.full_name} · game-by-game
             </h2>
             <p className={styles.meta}>
-              Scope <code>{SCOPE_CHART_LABELS[chartScope]}</code> · up to{" "}
-              {MAX_SELECTED_SEASONS} seasons · null≠0 · x-axis{" "}
+              Scope <code>{SCOPE_CHART_LABELS[chartScope]}</code> · season{" "}
+              <code>{chartSeasons[0]}</code> · null≠0 · x-axis{" "}
               <code>
                 {gamesSource === "dense" ? "game_index" : "game_num"}
               </code>
@@ -958,20 +1153,20 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
             </p>
 
             <div className={`${styles.controls} ${styles.chartControls}`}>
-              <SeasonMultiSelect
+              <SeasonSelect
                 options={SEASON_OPTIONS}
-                value={chartSeasons}
+                value={chartSeasons[0] ?? "2025-26"}
                 onChange={(next) => {
-                  setChartSeasons(next);
-                  writePlayerUrl({ seasons: next });
+                  const seasons = [next] as SeasonId[];
+                  setChartSeasons(seasons);
+                  writePlayerUrl({ seasons });
                 }}
-                max={MAX_SELECTED_SEASONS}
-                label="Chart seasons"
+                label="Chart season"
               />
               <div
                 className={styles.seg}
                 role="group"
-                aria-label="Chart: raw curated per-game · scope"
+                aria-label="Chart scope"
               >
                 {SCOPE_OPTIONS.map((opt) => (
                   <button
@@ -986,7 +1181,11 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                   </button>
                 ))}
               </div>
-              <div className={styles.seg} role="group" aria-label="Stat">
+              <div
+                className={`${styles.seg} ${styles.statSeg}`}
+                role="group"
+                aria-label="Stat"
+              >
                 {STAT_OPTIONS.map((opt) => (
                   <button
                     key={opt.key}
@@ -1011,8 +1210,8 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               <div className={styles.stateEmpty} role="status">
                 <p className={styles.stateTitle}>No games for this scope</p>
                 <p className={styles.stateBody}>
-                  No games for {selected.full_name} with seasons{" "}
-                  <code>{chartSeasons.join(", ")}</code> and scope{" "}
+                  No games for {selected.full_name} in season{" "}
+                  <code>{chartSeasons[0]}</code> and scope{" "}
                   <code>{chartScope}</code>. Try another season or scope.
                 </p>
               </div>
@@ -1021,7 +1220,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={chartData}
-                    margin={{ top: 8, right: 8, left: 4, bottom: 12 }}
+                    margin={{ top: 22, right: 8, left: 4, bottom: 12 }}
                     barCategoryGap="12%"
                     barGap={1}
                   >
@@ -1064,15 +1263,33 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                         borderRadius: 10,
                         color: "#f1f5f9",
                       }}
-                      formatter={(value: number | string, name: string) => {
-                        if (value == null || value === "") return ["—", name];
-                        const n = Number(value);
+                      formatter={(
+                        value: number | string,
+                        name: string,
+                        item
+                      ) => {
+                        const season = String(
+                          (item as { dataKey?: string })?.dataKey ?? name
+                        );
+                        const row = (item as { payload?: Record<string, string | number | null> })
+                          ?.payload;
+                        const raw = row?.[`raw_${season}`];
+                        const overflow = row?.[`overflow_${season}`] === 1;
+                        const n =
+                          typeof raw === "number" ? raw : Number(value);
+                        if (value == null || value === "" || !Number.isFinite(n)) {
+                          return ["—", name];
+                        }
                         const series = isPct
                           ? `${name} (single-game rate)`
                           : name;
-                        if (isPct) return [`${n.toFixed(1)}%`, series];
+                        const shown = isPct
+                          ? `${n.toFixed(1)}%`
+                          : Number.isInteger(n)
+                            ? String(n)
+                            : n.toFixed(1);
                         return [
-                          Number.isInteger(n) ? n : n.toFixed(1),
+                          overflow ? `${shown} (overflow)` : shown,
                           series,
                         ];
                       }}
@@ -1096,6 +1313,22 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                     <Legend
                       wrapperStyle={{ fontSize: 12, maxWidth: "100%" }}
                     />
+                    {seasonAvgY != null ? (
+                      <ReferenceLine
+                        y={seasonAvgY}
+                        stroke={OVERFLOW_CHAMPAGNE}
+                        strokeDasharray="4 4"
+                        strokeOpacity={0.85}
+                        strokeWidth={1.25}
+                        ifOverflow="discard"
+                        label={{
+                          value: "avg",
+                          position: "insideTopRight",
+                          fill: OVERFLOW_CHAMPAGNE,
+                          fontSize: 10,
+                        }}
+                      />
+                    ) : null}
                     {chartSeasons.map((s) => {
                       const fill = seasonColors[s] || FALLBACK_CHART_STROKE;
                       const opacity = seasonOpacities[s] ?? 1;
@@ -1106,13 +1339,45 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                           name={s}
                           fill={fill}
                           fillOpacity={opacity}
-                          stroke={fill}
-                          strokeOpacity={opacity}
-                          strokeWidth={0.5}
                           maxBarSize={10}
                           isAnimationActive={false}
                           // null DNP → empty column slot (no connector)
-                        />
+                          shape={(barProps: {
+                            x?: number;
+                            y?: number;
+                            width?: number;
+                            height?: number;
+                            payload?: Record<string, string | number | null>;
+                          }) => (
+                            <OverflowBarShape
+                              x={barProps.x}
+                              y={barProps.y}
+                              width={barProps.width}
+                              height={barProps.height}
+                              payload={barProps.payload}
+                              fill={fill}
+                              fillOpacity={opacity}
+                              dataKey={s}
+                              isPct={isPct}
+                            />
+                          )}
+                        >
+                          {chartData.map((entry, i) => (
+                            <Cell
+                              key={`c-${s}-${i}`}
+                              // aria: expose true value when overflow
+                              aria-label={
+                                entry[`overflow_${s}`] === 1 &&
+                                typeof entry[`raw_${s}`] === "number"
+                                  ? `Game ${entry.game_num}: ${formatOverflowLabel(
+                                      Number(entry[`raw_${s}`]),
+                                      isPct
+                                    )} (overflow)`
+                                  : undefined
+                              }
+                            />
+                          ))}
+                        </Bar>
                       );
                     })}
                   </BarChart>
@@ -1131,17 +1396,18 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               </code>
               {chartScope === "playoff_only"
                 ? " (playoffs: fixed 1–28; DNP/not-reached = empty column)"
-                : " (regular: fixed 1–82; columns for played; DNP = empty; null≠0; newest season full opacity → older dimmer)"}{" "}
-              · counting stats are per-game; FG%/FT% are single-game rates
+                : " (regular: fixed 1–82; columns for played; DNP = empty; null≠0)"}{" "}
+              · overflow caps at Y max (▲ + true value) · counting per-game; FG%/FT% single-game rates
             </p>
           </section>
 
-          {/* 2) Radar — Recharts RadarChart, ≤5 season polygons */}
+          {/* 2) Radar — player polygon over league/pool average underlay */}
           <section className={styles.panel} aria-label="9-cat radar">
             <h2 className={styles.panelTitle}>9-cat radar</h2>
             <p className={styles.meta}>
               Mart averages · <code>{SCOPE_CHART_LABELS[chartScope]}</code> ·
-              seasons match line chart · 3PM = <code>avg_fg3m</code>
+              season <code>{chartSeasons[0]}</code> · pool underlay · 3PM ={" "}
+              <code>avg_fg3m</code>
             </p>
             {avgLoading ? (
               <ChartSkeleton label="Loading averages…" />
@@ -1154,7 +1420,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               <div className={styles.stateEmpty} role="status">
                 <p className={styles.stateTitle}>No mart rows for this scope</p>
                 <p className={styles.stateBody}>
-                  No averages for selected seasons /{" "}
+                  No averages for season <code>{chartSeasons[0]}</code> /{" "}
                   <code>{chartScope}</code>. Try another season or scope.
                 </p>
               </div>
@@ -1197,6 +1463,18 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
                       tick={false}
                       axisLine={false}
                     />
+                    {leagueAvgs ? (
+                      <Radar
+                        name="Pool avg"
+                        dataKey="pool"
+                        stroke="rgba(247, 231, 206, 0.55)"
+                        fill="rgba(247, 231, 206, 0.22)"
+                        fillOpacity={0.45}
+                        strokeOpacity={0.55}
+                        strokeWidth={1.25}
+                        isAnimationActive={false}
+                      />
+                    ) : null}
                     {chartSeasons.map((s) => {
                       const stroke = seasonColors[s] || FALLBACK_CHART_STROKE;
                       const opacity = seasonOpacities[s] ?? 1;
@@ -1256,7 +1534,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
               <div className={styles.stateEmpty} role="status">
                 <p className={styles.stateTitle}>No mart averages to show</p>
                 <p className={styles.stateBody}>
-                  No averages for the selected seasons and scope.
+                  No averages for the selected season and scope.
                 </p>
               </div>
             ) : (

@@ -1,5 +1,8 @@
 import type { SeasonId, SeasonTypeScope } from "@/types/season_player_averages";
-import { MAX_SELECTED_SEASONS, SEASON_OPTIONS } from "@/types/season_player_averages";
+import { SEASON_OPTIONS } from "@/types/season_player_averages";
+
+/** Player charts/views: exactly one season (multi-select removed). */
+export const PLAYER_MAX_SEASONS = 1;
 
 export type ChartStatKey =
   | "pts"
@@ -32,12 +35,11 @@ export function parseSeasonsParam(raw: string | null): SeasonId[] | null {
     .split(",")
     .map((s) => s.trim())
     .filter((s) => SEASON_SET.has(s)) as SeasonId[];
-  const uniq: SeasonId[] = [];
+  // Player UX: one season only — take first valid (legacy multi URLs collapse).
   for (const s of parts) {
-    if (!uniq.includes(s)) uniq.push(s);
-    if (uniq.length >= MAX_SELECTED_SEASONS) break;
+    return [s];
   }
-  return uniq.length ? uniq : null;
+  return null;
 }
 
 /** reg_plus_playoffs → reg_only (UI lock). */

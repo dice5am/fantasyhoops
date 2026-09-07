@@ -316,3 +316,14 @@
   letter-spacing: -0.02em;
   color: var(--fh-text);
 }
+
+
+/* player-pass 375 chrome */
+@media (max-width: 400px) {
+  .wrap, .article, .list {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    box-sizing: border-box;
+  }
+}
