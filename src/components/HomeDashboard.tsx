@@ -95,7 +95,7 @@ const INSIGHT_LINKS = [
   { href: "/insight/rank-stability-playoff", label: "Playoff stability" },
 ] as const;
 
-const BOARD_LIMIT = 40;
+const BOARD_LIMIT = 25;
 
 function ScarcitySpectrum({
   rows,
@@ -111,13 +111,13 @@ function ScarcitySpectrum({
     >
       <div className={styles.spectrumHead}>
         <div>
-          <h2 className={styles.panelTitle}>Scarcity Spectrum</h2>
+          <h2 className={styles.panelTitle}>Scarcity Spectrum · COUNT</h2>
           <p className={styles.panelSub}>
-            How rare is elite? Percentile bands on active pool · absolute ≥80
-            marks on C1 only · never ≥80 elite on O1/OFF/DEF/EFF
+            Bars = n players in score bands · ≥90 / ≥80 / mid(40–60) · not
+            percentile % · recomputed on topPct
           </p>
         </div>
-        <ul className={styles.spectrumLegend} aria-label="Percentile bands">
+        <ul className={styles.spectrumLegend} aria-label="Score count bands">
           {SPECTRUM_BAND_ORDER.map((b) => (
             <li key={b}>
               <span
@@ -136,46 +136,57 @@ function ScarcitySpectrum({
         </div>
       ) : (
         <ul className={styles.spectrumList}>
-          {rows.map((row) => (
-            <li key={row.metric} className={styles.spectrumRow}>
-              <span className={styles.spectrumLabel}>
-                {row.metric === "TOV" ? "TOV†" : row.metric}
-              </span>
-              <div
-                className={styles.spectrumBar}
-                role="img"
-                aria-label={`${row.metric}: top 5% ${(row.shares.top_5 * 100).toFixed(0)}% of pool`}
-              >
-                {SPECTRUM_BAND_ORDER.map((band) => {
-                  const share = row.shares[band];
-                  if (share <= 0) return null;
-                  return (
+          {rows.map((row) => {
+            const label = `${row.n_ge_90}/${row.n_ge_80}/${row.n_in_40_60}`;
+            return (
+              <li key={row.metric} className={styles.spectrumRow}>
+                <span className={styles.spectrumLabel}>
+                  {row.metric === "TOV" ? "TOV†" : row.metric}
+                </span>
+                <div
+                  className={styles.spectrumBar}
+                  role="img"
+                  aria-label={`${row.metric}: ${row.n_ge_90} ≥90, ${row.n_ge_80} ≥80, ${row.n_in_40_60} mid`}
+                >
+                  {SPECTRUM_BAND_ORDER.map((band) => {
+                    const count = row.counts[band];
+                    if (count <= 0) return null;
+                    return (
+                      <span
+                        key={band}
+                        className={styles.spectrumSeg}
+                        data-band={band}
+                        style={{ flexGrow: count, flexBasis: 0 }}
+                        title={`${SPECTRUM_BAND_LABEL[band]}: ${count}`}
+                      />
+                    );
+                  })}
+                  {row.counts.other > 0 ? (
                     <span
-                      key={band}
                       className={styles.spectrumSeg}
-                      data-band={band}
-                      style={{ flexGrow: share, flexBasis: 0 }}
-                      title={`${SPECTRUM_BAND_LABEL[band]}: ${(share * 100).toFixed(1)}%`}
+                      data-band="other"
+                      style={{ flexGrow: row.counts.other, flexBasis: 0 }}
+                      title={`other: ${row.counts.other}`}
                     />
-                  );
-                })}
-              </div>
-              <span className={styles.spectrumMeta}>
-                {row.n_ge_80 != null ? (
-                  <span className={styles.ge80} title="Absolute score ≥80 (C1)">
-                    {row.n_ge_80}≥80
+                  ) : null}
+                </div>
+                <span className={styles.spectrumMeta}>
+                  <span
+                    className={styles.ge80}
+                    title="n≥90 / n≥80 / mid(40–60)"
+                  >
+                    {label}
                   </span>
-                ) : (
-                  <span className={styles.ge80Muted}>pct</span>
-                )}
-              </span>
-            </li>
-          ))}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
       <p className={styles.spectrumFoot}>
-        † TOV uses inverted T1 — high score = low turnover risk. Shares recomputed
-        when topPct / season / scope changes.
+        Labels: n≥90 / n≥80 / mid · † TOV inverted (high score = low TOV risk —
+        avoid elite language). Counts recompute when topPct / season / scope
+        changes.
       </p>
     </section>
   );
@@ -709,10 +720,10 @@ export function HomeDashboard({
         >
           <div className={styles.boardHead}>
             <div>
-              <h2 className={styles.panelTitle}>Leaders · one board</h2>
+              <h2 className={styles.panelTitle}>Leaders · top 25</h2>
               <p className={styles.panelSub}>
-                TanStack sort · F. Lastname + pip · rarity = within-pool
-                percentile (top 5/10/20%)
+                TanStack sort · F. Lastname + pip · rarity chips = within-pool
+                percentile (not Spectrum hero)
               </p>
             </div>
             <div className={styles.sortChips} role="group" aria-label="Sort by">

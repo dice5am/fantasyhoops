@@ -2,9 +2,9 @@
  * Home Package A scarcity math — client-side from active /api/fantasy-scores pool.
  * Source of truth: /workspace/nba-phase1/docs/HOME_SCARCITY_MATH.md
  *
- * pct_rank(i) = 100 * rank_asc(x_i) / n  (average ranks for ties)
- * Higher pct_rank = better (TOV T1 already inverted).
- * Do not invent fantasy scores — only percentiles / band shares / badges.
+ * Spectrum HERO = absolute score-threshold COUNTS (n_ge_90 / n_ge_80 / n_in_40_60),
+ * not percentile-% shares. Board rarity badges still use pct_rank.
+ * pct_rank(i) = 100 * rank_asc(x_i) / n  (average ranks for ties).
  */
 
 import type { PlayerFantasyScore } from "@/types/fantasy_score";
@@ -39,21 +39,26 @@ export type ScoreSortKey =
 
 export type Rarity = "ELITE" | "SCARCE" | "SOLID" | null;
 
-export type SpectrumShares = {
-  bottom_50: number;
-  mid_30: number;
-  top_20: number;
-  top_10: number;
-  top_5: number;
+/** Non-overlapping count bands for Spectrum hero bars. */
+export type SpectrumCounts = {
+  /** score >= 90 */
+  ge_90: number;
+  /** 80 <= score < 90 */
+  band_80: number;
+  /** 40 <= score < 60 */
+  mid: number;
+  /** remainder of pool */
+  other: number;
 };
 
 export type SpectrumRow = {
   metric: SpectrumMetric;
   n: number;
-  shares: SpectrumShares;
-  /** C1 counting only */
-  n_ge_80?: number;
-  n_ge_90?: number;
+  counts: SpectrumCounts;
+  /** Overlapping / additive labels (SoT) */
+  n_ge_90: number;
+  n_ge_80: number;
+  n_in_40_60: number;
 };
 
 export type RarityChip = {
@@ -114,14 +119,6 @@ const CHIP_PREF: SpectrumMetric[] = [
   "TOV",
 ];
 
-const EMPTY_SHARES: SpectrumShares = {
-  bottom_50: 0,
-  mid_30: 0,
-  top_20: 0,
-  top_10: 0,
-  top_5: 0,
-};
-
 function scoreOf(row: PlayerFantasyScore, field: keyof PlayerFantasyScore): number {
   const v = row[field];
   return typeof v === "number" && Number.isFinite(v) ? v : Number.NaN;
@@ -176,31 +173,6 @@ export function rarityFromPct(pct: number): Rarity {
   return null;
 }
 
-function sharesFromPct(pcts: number[]): SpectrumShares {
-  const n = pcts.filter((p) => Number.isFinite(p)).length;
-  if (n === 0) return { ...EMPTY_SHARES };
-  let bottom_50 = 0;
-  let mid_30 = 0;
-  let top_20 = 0;
-  let top_10 = 0;
-  let top_5 = 0;
-  for (const p of pcts) {
-    if (!Number.isFinite(p)) continue;
-    if (p < 50) bottom_50 += 1;
-    else if (p < 80) mid_30 += 1;
-    else if (p < 90) top_20 += 1;
-    else if (p < 95) top_10 += 1;
-    else top_5 += 1;
-  }
-  return {
-    bottom_50: bottom_50 / n,
-    mid_30: mid_30 / n,
-    top_20: top_20 / n,
-    top_10: top_10 / n,
-    top_5: top_5 / n,
-  };
-}
-
 function quantile(sortedAsc: number[], q: number): number {
   const n = sortedAsc.length;
   if (n === 0) return Number.NaN;
@@ -213,19 +185,41 @@ function quantile(sortedAsc: number[], q: number): number {
   return sortedAsc[lo]! * (1 - w) + sortedAsc[hi]! * w;
 }
 
-/** Scarcity Spectrum rows for the 9 cats on the active pool. */
+function countBands(values: number[]): {
+  counts: SpectrumCounts;
+  n_ge_90: number;
+  n_ge_80: number;
+  n_in_40_60: number;
+} {
+  let ge_90 = 0;
+  let band_80 = 0;
+  let mid = 0;
+  let other = 0;
+  for (const v of values) {
+    if (!Number.isFinite(v)) {
+      other += 1;
+      continue;
+    }
+    if (v >= 90) ge_90 += 1;
+    else if (v >= 80) band_80 += 1;
+    else if (v >= 40 && v < 60) mid += 1;
+    else other += 1;
+  }
+  return {
+    counts: { ge_90, band_80, mid, other },
+    n_ge_90: ge_90,
+    n_ge_80: ge_90 + band_80,
+    n_in_40_60: mid,
+  };
+}
+
+/** Scarcity Spectrum rows — COUNT hero on active pool (respects topPct). */
 export function buildSpectrum(rows: PlayerFantasyScore[]): SpectrumRow[] {
   const n = rows.length;
-  return SPECTRUM_ORDER.map(({ metric, field, c1 }) => {
+  return SPECTRUM_ORDER.map(({ metric, field }) => {
     const values = rows.map((r) => scoreOf(r, field));
-    const pcts = pctRanks(values);
-    const shares = sharesFromPct(pcts);
-    const out: SpectrumRow = { metric, n, shares };
-    if (c1) {
-      out.n_ge_80 = values.filter((v) => Number.isFinite(v) && v >= 80).length;
-      out.n_ge_90 = values.filter((v) => Number.isFinite(v) && v >= 90).length;
-    }
-    return out;
+    const { counts, n_ge_90, n_ge_80, n_in_40_60 } = countBands(values);
+    return { metric, n, counts, n_ge_90, n_ge_80, n_in_40_60 };
   });
 }
 
@@ -380,18 +374,17 @@ export const SORT_CHIPS: { key: ScoreSortKey; label: string }[] = [
   { key: "ft_f1", label: "FT" },
 ];
 
-export const SPECTRUM_BAND_ORDER: (keyof SpectrumShares)[] = [
-  "bottom_50",
-  "mid_30",
-  "top_20",
-  "top_10",
-  "top_5",
+export type SpectrumBandKey = "ge_90" | "band_80" | "mid";
+
+/** Stack order left→right for count hero (non-overlapping). */
+export const SPECTRUM_BAND_ORDER: SpectrumBandKey[] = [
+  "ge_90",
+  "band_80",
+  "mid",
 ];
 
-export const SPECTRUM_BAND_LABEL: Record<keyof SpectrumShares, string> = {
-  bottom_50: "Bot 50%",
-  mid_30: "Mid",
-  top_20: "Top 20%",
-  top_10: "Top 10%",
-  top_5: "Top 5%",
+export const SPECTRUM_BAND_LABEL: Record<SpectrumBandKey, string> = {
+  ge_90: "≥90",
+  band_80: "≥80",
+  mid: "mid",
 };

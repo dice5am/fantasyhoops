@@ -307,29 +307,23 @@
   border: 1px solid rgba(255, 252, 245, 0.2);
 }
 
-.legendSwatch[data-band="bottom_50"],
-.spectrumSeg[data-band="bottom_50"] {
-  background: rgba(90, 84, 76, 0.85);
-}
-
-.legendSwatch[data-band="mid_30"],
-.spectrumSeg[data-band="mid_30"] {
-  background: rgba(201, 184, 160, 0.65);
-}
-
-.legendSwatch[data-band="top_20"],
-.spectrumSeg[data-band="top_20"] {
-  background: rgba(247, 231, 206, 0.55);
-}
-
-.legendSwatch[data-band="top_10"],
-.spectrumSeg[data-band="top_10"] {
-  background: rgba(247, 231, 206, 0.82);
-}
-
-.legendSwatch[data-band="top_5"],
-.spectrumSeg[data-band="top_5"] {
+.legendSwatch[data-band="ge_90"],
+.spectrumSeg[data-band="ge_90"] {
   background: rgba(255, 252, 245, 0.95);
+}
+
+.legendSwatch[data-band="band_80"],
+.spectrumSeg[data-band="band_80"] {
+  background: rgba(247, 231, 206, 0.78);
+}
+
+.legendSwatch[data-band="mid"],
+.spectrumSeg[data-band="mid"] {
+  background: rgba(201, 184, 160, 0.58);
+}
+
+.spectrumSeg[data-band="other"] {
+  background: rgba(90, 84, 76, 0.55);
 }
 
 .spectrumList {
@@ -343,8 +337,8 @@
 
 .spectrumRow {
   display: grid;
-  grid-template-columns: 2.6rem minmax(0, 1fr) 3.2rem;
-  gap: 0.45rem;
+  grid-template-columns: 2.6rem minmax(0, 1fr) 4.6rem;
+  gap: 0.4rem;
   align-items: center;
 }
 
@@ -372,8 +366,9 @@
 
 .spectrumMeta {
   text-align: right;
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
 
 .ge80 {
@@ -522,6 +517,32 @@
   border-radius: 12px;
   border: 1px solid rgba(247, 231, 206, 0.12);
   background: rgba(12, 12, 14, 0.35);
+}
+
+/* denser board top-25 (Designer SoT) */
+.boardPanel .panelTitle {
+  font-size: 0.875rem; /* ~14 */
+}
+
+.boardPanel .panelSub {
+  font-size: 0.625rem; /* ~10 */
+  line-height: 1.35;
+}
+
+.boardTable {
+  font-size: 0.7rem;
+}
+
+.boardTable th,
+.boardTable td {
+  padding: 0.18rem 0.35rem;
+  line-height: 1.15;
+  height: 1.05rem;
+}
+
+.boardTable th {
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
 }
 
 .boardTable {
