@@ -1,9 +1,8 @@
 /**
  * Shared NBA 30-team color tokens.
- * Hex from researched brand/identity sources — see TEAM_COLORS.md.
- * Sources:
- *  - sportsbrackets: https://sportsbrackets.net/2026/05/19/complete-nba-team-identity-guide-logos-colors-and-arenas-for-all-30-teams/
- *  - coloracci: https://coloracci.ai/blog/nba-team-colors-guide
+ * Hex from researched brand/identity sources — see TEAM_COLORS.md (per-team citations).
+ * Prefer official club brand / NBA media style guides; secondary: Wikipedia brand names,
+ * teampalettes, coloracci, sportsbrackets identity tables.
  */
 
 export type TeamAbbr =
@@ -50,8 +49,8 @@ export type TeamColorToken = {
    * when primary would fail contrast on near-black backgrounds.
    */
   chartPrimary: string;
-  /** Citation tag → TEAM_COLORS.md */
-  source: "sportsbrackets" | "coloracci" | "sportsbrackets+coloracci";
+  /** Citation tag → TEAM_COLORS.md per-team row */
+  source: string;
 };
 
 function parseHex(hex: string): { r: number; g: number; b: number } {
@@ -92,7 +91,7 @@ function T(
   name: string,
   primary: string,
   accents: [string] | [string, string],
-  source: TeamColorToken["source"]
+  source: string
 ): TeamColorToken {
   return {
     abbr,
@@ -106,36 +105,66 @@ function T(
 
 /** All 30 teams — keys = curated `team_abbreviation`. */
 export const TEAM_COLORS: Record<TeamAbbr, TeamColorToken> = {
-  ATL: T("ATL", "Atlanta Hawks", "#E03A3E", ["#C1D32F", "#26282A"], "sportsbrackets+coloracci"),
-  BKN: T("BKN", "Brooklyn Nets", "#000000", ["#FFFFFF"], "sportsbrackets"),
-  BOS: T("BOS", "Boston Celtics", "#007A33", ["#BA9653"], "sportsbrackets"),
-  CHA: T("CHA", "Charlotte Hornets", "#1D1160", ["#00788C"], "sportsbrackets"),
-  CHI: T("CHI", "Chicago Bulls", "#CE1141", ["#000000"], "sportsbrackets"),
-  CLE: T("CLE", "Cleveland Cavaliers", "#860038", ["#FDBB30"], "sportsbrackets"),
-  DAL: T("DAL", "Dallas Mavericks", "#00538C", ["#002B5E"], "sportsbrackets"),
-  DEN: T("DEN", "Denver Nuggets", "#0E2240", ["#FEC524", "#8B2131"], "sportsbrackets+coloracci"),
-  DET: T("DET", "Detroit Pistons", "#C8102E", ["#1D42BA"], "sportsbrackets"),
-  GSW: T("GSW", "Golden State Warriors", "#1D428A", ["#FFC72C"], "sportsbrackets"),
-  HOU: T("HOU", "Houston Rockets", "#CE1141", ["#000000"], "sportsbrackets"),
-  IND: T("IND", "Indiana Pacers", "#002D62", ["#FDBB30"], "sportsbrackets"),
-  LAC: T("LAC", "LA Clippers", "#C8102E", ["#1D428A"], "sportsbrackets"),
-  LAL: T("LAL", "Los Angeles Lakers", "#552583", ["#FDB927"], "sportsbrackets"),
-  MEM: T("MEM", "Memphis Grizzlies", "#5D76A9", ["#12173F", "#F5B112"], "sportsbrackets+coloracci"),
-  MIA: T("MIA", "Miami Heat", "#98002E", ["#F9A01B"], "sportsbrackets"),
-  MIL: T("MIL", "Milwaukee Bucks", "#00471B", ["#EEE1C6", "#0077C0"], "sportsbrackets+coloracci"),
-  MIN: T("MIN", "Minnesota Timberwolves", "#0C2340", ["#236192"], "sportsbrackets"),
-  NOP: T("NOP", "New Orleans Pelicans", "#0C2340", ["#C8102E"], "sportsbrackets"),
-  NYK: T("NYK", "New York Knicks", "#006BB6", ["#F58426"], "sportsbrackets"),
-  OKC: T("OKC", "Oklahoma City Thunder", "#007AC1", ["#EF3B24"], "sportsbrackets"),
-  ORL: T("ORL", "Orlando Magic", "#0077C0", ["#C4CED4"], "sportsbrackets"),
-  PHI: T("PHI", "Philadelphia 76ers", "#006BB6", ["#ED174C"], "sportsbrackets"),
-  PHX: T("PHX", "Phoenix Suns", "#1D1160", ["#E56020"], "sportsbrackets"),
-  POR: T("POR", "Portland Trail Blazers", "#E03A3E", ["#000000"], "sportsbrackets"),
-  SAC: T("SAC", "Sacramento Kings", "#5A2D81", ["#63727A"], "sportsbrackets"),
-  SAS: T("SAS", "San Antonio Spurs", "#C4CED4", ["#000000"], "sportsbrackets"),
-  TOR: T("TOR", "Toronto Raptors", "#CE1141", ["#000000"], "sportsbrackets"),
-  UTA: T("UTA", "Utah Jazz", "#002B5C", ["#00471B", "#F9A01B"], "sportsbrackets+coloracci"),
-  WAS: T("WAS", "Washington Wizards", "#002B5C", ["#E31837"], "sportsbrackets"),
+  // ATL Hawks Red + Volt Green + Charcoal — brand / sportsbrackets + coloracci
+  ATL: T("ATL", "Atlanta Hawks", "#E03A3E", ["#C1D32F", "#26282A"], "brand:sportsbrackets+coloracci+teampalettes"),
+  // BKN black/white — brand
+  BKN: T("BKN", "Brooklyn Nets", "#000000", ["#FFFFFF"], "brand:sportsbrackets+teampalettes"),
+  // BOS Celtics Green + Gold — brand (#007A33 not wiki #008348)
+  BOS: T("BOS", "Boston Celtics", "#007A33", ["#BA9653"], "brand:sportsbrackets+teampalettes+coloracci"),
+  // CHA Hornets Purple + Teal — brand (purple primary)
+  CHA: T("CHA", "Charlotte Hornets", "#1D1160", ["#00788C"], "brand:sportsbrackets+coloracci"),
+  // CHI Bulls Red + Black
+  CHI: T("CHI", "Chicago Bulls", "#CE1141", ["#000000"], "brand:sportsbrackets+teampalettes"),
+  // CLE Wine + Gold (+ Navy in brand; gold is chart accent)
+  CLE: T("CLE", "Cleveland Cavaliers", "#860038", ["#FDBB30", "#041E42"], "brand:sportsbrackets+coloracci"),
+  // DAL Royal Blue + Navy
+  DAL: T("DAL", "Dallas Mavericks", "#00538C", ["#002B5E"], "brand:sportsbrackets+coloracci"),
+  // DEN Midnight Blue + Sunshine Yellow + Flatirons Red
+  DEN: T("DEN", "Denver Nuggets", "#0E2240", ["#FEC524", "#8B2131"], "brand:sportsbrackets+coloracci"),
+  // DET Red + Royal Blue
+  DET: T("DET", "Detroit Pistons", "#C8102E", ["#1D42BA"], "brand:sportsbrackets+teampalettes"),
+  // GSW Warriors Blue + Golden Yellow
+  GSW: T("GSW", "Golden State Warriors", "#1D428A", ["#FFC72C"], "brand:sportsbrackets+teampalettes"),
+  // HOU Rockets Red + Black
+  HOU: T("HOU", "Houston Rockets", "#CE1141", ["#000000"], "brand:sportsbrackets+teampalettes"),
+  // IND Pacers Blue + Yellow
+  IND: T("IND", "Indiana Pacers", "#002D62", ["#FDBB30"], "brand:sportsbrackets+teampalettes"),
+  // LAC Red + Blue
+  LAC: T("LAC", "LA Clippers", "#C8102E", ["#1D428A"], "brand:sportsbrackets+teampalettes"),
+  // LAL Purple + Gold (PMS 526 C / #552583)
+  LAL: T("LAL", "Los Angeles Lakers", "#552583", ["#FDB927"], "brand:teamcolorcodes+teampalettes"),
+  // MEM Beale Street Blue + Navy + Yellow
+  MEM: T("MEM", "Memphis Grizzlies", "#5D76A9", ["#12173F", "#F5B112"], "brand:sportsbrackets+coloracci"),
+  // MIA Red + Yellow (flame)
+  MIA: T("MIA", "Miami Heat", "#98002E", ["#F9A01B"], "brand:sportsbrackets+coloracci"),
+  // MIL Good Land Green (forest/olive PMS 350 C) + Cream City Cream + Great Lakes Blue — NOT neon
+  MIL: T("MIL", "Milwaukee Bucks", "#00471B", ["#EEE1C6", "#0077C0"], "brand:nba-bucks-guidelines+teamcolorsguide"),
+  // MIN Midnight Blue + Lake Blue + Aurora Green (2017 brand)
+  MIN: T("MIN", "Minnesota Timberwolves", "#0C2340", ["#236192", "#78BE20"], "brand:nba-wolves-2017+brandcolorcode"),
+  // NOP Navy + Red (+ Gold)
+  NOP: T("NOP", "New Orleans Pelicans", "#0C2340", ["#C8102E", "#85714D"], "brand:sportsbrackets+coloracci"),
+  // NYK Blue + Orange
+  NYK: T("NYK", "New York Knicks", "#006BB6", ["#F58426"], "brand:sportsbrackets+teampalettes"),
+  // OKC Thunder Blue + Sunset Orange
+  OKC: T("OKC", "Oklahoma City Thunder", "#007AC1", ["#EF3B24"], "brand:sportsbrackets+teampalettes"),
+  // ORL Magic Blue + Silver
+  ORL: T("ORL", "Orlando Magic", "#0077C0", ["#C4CED4"], "brand:sportsbrackets+coloracci"),
+  // PHI Blue + Red
+  PHI: T("PHI", "Philadelphia 76ers", "#006BB6", ["#ED174C"], "brand:sportsbrackets+teampalettes"),
+  // PHX Purple + Orange
+  PHX: T("PHX", "Phoenix Suns", "#1D1160", ["#E56020"], "brand:sportsbrackets+coloracci"),
+  // POR Red + Black
+  POR: T("POR", "Portland Trail Blazers", "#E03A3E", ["#000000"], "brand:sportsbrackets+teampalettes"),
+  // SAC Purple + Gray
+  SAC: T("SAC", "Sacramento Kings", "#5A2D81", ["#63727A"], "brand:sportsbrackets+teampalettes"),
+  // SAS Silver + Black (silver primary for chart readability; black accent)
+  SAS: T("SAS", "San Antonio Spurs", "#C4CED4", ["#000000"], "brand:sportsbrackets+coloracci"),
+  // TOR Red + Black
+  TOR: T("TOR", "Toronto Raptors", "#CE1141", ["#000000"], "brand:sportsbrackets+teampalettes"),
+  // UTA Navy + Green + Yellow (post-2022 mountain palette; not purple era)
+  UTA: T("UTA", "Utah Jazz", "#002B5C", ["#00471B", "#F9A01B"], "brand:sportsbrackets+coloracci+teampalettes"),
+  // WAS Navy + Red
+  WAS: T("WAS", "Washington Wizards", "#002B5C", ["#E31837"], "brand:sportsbrackets+teampalettes"),
 };
 
 export function isTeamAbbr(v: string | null | undefined): v is TeamAbbr {
