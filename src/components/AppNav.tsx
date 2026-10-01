@@ -7,6 +7,11 @@ import styles from "./AppNav.module.css";
 const TABS = [
   { href: "/", label: "Home", match: (p: string) => p === "/" },
   {
+    href: "/schedule",
+    label: "Schedule",
+    match: (p: string) => p.startsWith("/schedule"),
+  },
+  {
     href: "/player",
     label: "Player",
     match: (p: string) => p.startsWith("/player"),

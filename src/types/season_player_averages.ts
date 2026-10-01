@@ -39,13 +39,11 @@ export const SEASON_OPTIONS: SeasonId[] = [
  * UI scope options only — no reg_plus_playoffs in the product chrome.
  * Mart may still store reg_plus_playoffs; parsers fall back to reg_only.
  */
+/** Draft Prep bake: playoffs OFF in UI chrome (warehouse retains PO). */
 export const SCOPE_OPTIONS: {
-  value: "reg_only" | "playoff_only";
+  value: "reg_only";
   label: string;
-}[] = [
-  { value: "reg_only", label: "Regular only" },
-  { value: "playoff_only", label: "Playoffs only" },
-];
+}[] = [{ value: "reg_only", label: "Regular only" }];
 
 /** Human labels for chart scope (Phase 3). */
 export const SCOPE_CHART_LABELS: Record<SeasonTypeScope, string> = {

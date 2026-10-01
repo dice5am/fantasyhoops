@@ -1,0 +1,127 @@
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 2.5rem;
+  min-width: 0;
+}
+
+.head {
+  margin-bottom: 0.85rem;
+}
+
+.title {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 750;
+  color: var(--fh-champagne-text);
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--fh-text-muted);
+}
+
+.sub code {
+  color: var(--fh-champagne);
+  font-size: 0.74rem;
+}
+
+.meta {
+  margin: 0.55rem 0 0.85rem;
+  font-size: 0.75rem;
+  color: var(--fh-text-dim);
+}
+
+.panel {
+  border-radius: 16px;
+  border: 1px solid rgba(247, 231, 206, 0.14);
+  background: linear-gradient(
+    165deg,
+    rgba(28, 26, 24, 0.92),
+    rgba(14, 14, 16, 0.88)
+  );
+  padding: 0.75rem 0.85rem 0.9rem;
+  box-shadow: 0 0 0 1px rgba(255, 252, 245, 0.03) inset;
+}
+
+.scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.35rem 0.45rem;
+  border-bottom: 1px solid rgba(255, 252, 245, 0.06);
+  white-space: nowrap;
+}
+
+.table th {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fh-text-muted);
+  font-weight: 700;
+}
+
+.table td {
+  color: var(--fh-text);
+}
+
+.matchup {
+  font-weight: 650;
+  color: var(--fh-champagne-text);
+}
+
+.muted {
+  color: var(--fh-text-dim);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(247, 231, 206, 0.2);
+  background: rgba(247, 231, 206, 0.08);
+  color: var(--fh-champagne);
+}
+
+.badge[data-avail="scheduled_incomplete"],
+.badge[data-avail="time_tbd"],
+.badge[data-avail="location_tbd"] {
+  color: #f5d9a8;
+  border-color: rgba(245, 217, 168, 0.35);
+}
+
+.badge[data-avail="final"] {
+  color: var(--fh-text-muted);
+}
+
+.empty {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  color: var(--fh-text-muted);
+  font-size: 0.85rem;
+}
+
+.foot {
+  margin: 0.65rem 0 0;
+  font-size: 0.7rem;
+  color: var(--fh-text-dim);
+  line-height: 1.4;
+}
