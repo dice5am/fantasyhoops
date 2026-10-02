@@ -25,7 +25,8 @@ export type SeasonId =
   | "2022-23"
   | "2023-24"
   | "2024-25"
-  | "2025-26";
+  | "2025-26"
+  | "2026-27";
 
 export const SEASON_OPTIONS: SeasonId[] = [
   "2021-22",
@@ -33,7 +34,13 @@ export const SEASON_OPTIONS: SeasonId[] = [
   "2023-24",
   "2024-25",
   "2025-26",
+  "2026-27",
 ];
+
+/** Team tab Draft Prep defaults (independent of Home DEFAULT_SEASON). */
+export const TEAM_DEFAULT_SEASON: SeasonId = "2026-27";
+export const TEAM_PRIOR_SEASON: SeasonId = "2025-26";
+export const TEAM_DEFAULT_SCOPE = "reg_only" as const;
 
 /**
  * UI scope options only — no reg_plus_playoffs in the product chrome.
