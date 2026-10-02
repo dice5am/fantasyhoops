@@ -1,0 +1,114 @@
+.card {
+  border-radius: 16px;
+  border: 1px solid var(--fh-border);
+  background: rgba(30, 30, 34, 0.62);
+  backdrop-filter: blur(22px) saturate(var(--fh-glass-saturate));
+  padding: 1.15rem;
+  box-shadow: var(--fh-edge-top);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fh-text-dim);
+}
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--fh-champagne-text);
+}
+.sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--fh-text-muted);
+}
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.gp {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: var(--fh-champagne);
+  color: #121214;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.ha {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--fh-border);
+  color: var(--fh-text-muted);
+  font-size: 0.82rem;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) minmax(4rem, 2fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+.name {
+  font-weight: 600;
+  color: var(--fh-text);
+  font-size: 0.9rem;
+}
+.abbr {
+  color: var(--fh-text-dim);
+  font-weight: 500;
+}
+.barTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(247, 231, 206, 0.1);
+  overflow: hidden;
+}
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fh-champagne);
+}
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.78rem;
+  color: var(--fh-text-muted);
+  min-width: 3.5rem;
+}
+.meta strong {
+  color: var(--fh-champagne-text);
+  font-size: 0.9rem;
+}
+.soft {
+  margin: 0;
+  color: var(--fh-text-muted);
+  font-size: 0.9rem;
+}
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+  .meta {
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+  }
+}

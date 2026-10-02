@@ -33,7 +33,7 @@ type Props = {
   /** Compact mode for Player tab (tighter name col, quieter chrome). */
   compact?: boolean;
   /** Where season/scope filters navigate. Default /player. */
-  filterBasePath?: "/" | "/player";
+  filterBasePath?: "/" | "/player" | "/players";
   /** When true, selecting a row only updates ?player_id= on current path. */
   selectInPlace?: boolean;
 };

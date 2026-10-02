@@ -90,9 +90,9 @@ function fmtScore(v: number | null | undefined): string {
 }
 
 const INSIGHT_LINKS = [
-  { href: "/insight/fantasy-score-method", label: "Fantasy score method" },
-  { href: "/insight/rank-stability-5yr", label: "Rank stability" },
-  { href: "/insight/rank-stability-playoff", label: "Playoff stability" },
+  { href: "/insights/fantasy-score-method", label: "Fantasy score method" },
+  { href: "/insights/rank-stability-5yr", label: "Rank stability" },
+  { href: "/insights/rank-stability-playoff", label: "Playoff stability" },
 ] as const;
 
 const BOARD_LIMIT = 25;
@@ -703,7 +703,7 @@ export function HomeDashboard({
           </>
         ) : null}
         {" · "}
-        <Link href="/player" className={styles.metaLink}>
+        <Link href="/players" className={styles.metaLink}>
           Browse players →
         </Link>
       </p>
@@ -965,7 +965,7 @@ export function HomeDashboard({
               {l.label}
             </Link>
           ))}
-          <Link href="/insight" className={styles.insightLink}>
+          <Link href="/insights?segment=briefs" className={styles.insightLink}>
             All insights →
           </Link>
         </nav>

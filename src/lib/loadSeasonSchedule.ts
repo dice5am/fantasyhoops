@@ -73,6 +73,7 @@ function mapRow(raw: Record<string, unknown>): SeasonScheduleRow {
     home_team_abbreviation: toStr(raw.home_team_abbreviation),
     away_team_abbreviation: toStr(raw.away_team_abbreviation),
     game_label: toStr(raw.game_label),
+    game_subtype: toStr(raw.game_subtype),
   };
 }
 
@@ -121,3 +122,36 @@ export async function getSeasonSchedule(params?: {
 }
 
 export { DRAFT_PREP_SEASON };
+
+
+/**
+ * Fantasy-week join: Regular Season + NBA Cup Championship (counts_for_fantasy=false).
+ * Soft-empty stays honest — Cup final must appear with DoesntCountBadge.
+ */
+export async function getSeasonScheduleForFantasy(params?: {
+  season?: string;
+}): Promise<SeasonSchedulePayload> {
+  const season = params?.season ?? DRAFT_PREP_SEASON;
+  const all = await loadAll();
+  const rows = all
+    .filter(
+      (r) =>
+        r.season === season &&
+        (r.season_type === "Regular Season" ||
+          r.season_type === "NBA Cup Championship") &&
+        Boolean(r.game_id)
+    )
+    .sort((a, b) => {
+      if (a.game_date !== b.game_date) {
+        return a.game_date < b.game_date ? -1 : 1;
+      }
+      return a.game_id < b.game_id ? -1 : 1;
+    });
+  return {
+    season,
+    season_type_scope: "reg_only",
+    row_count: rows.length,
+    rows,
+    parquet_path: seasonSchedulePath(),
+  };
+}

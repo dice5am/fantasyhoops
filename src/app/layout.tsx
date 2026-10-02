@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FantasyHoops — League Pulse & Player Charts",
+  title: "FantasyHoops — Team · Players · Insights",
   description:
-    "Hybrid A1+A3 Home dashboard + Player explorer over parquet marts",
+    "Mix A+C Team workspace, Players week card, Insights Pulse & Briefs",
 };
 
 export default function RootLayout({

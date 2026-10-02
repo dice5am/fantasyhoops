@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import { TeamMarkPip } from "@/components/TeamMarkPip";
 import { SeasonSelect } from "@/components/SeasonSelect";
 import { formatAvg } from "@/lib/format";
@@ -27,13 +28,34 @@ import {
   formatDelta,
   formatDeltaVsPy,
   deltaPolarity,
-  type CompareMode,
 } from "@/lib/teamCompare";
 import {
   SEASON_OPTIONS,
   type SeasonId,
 } from "@/types/season_player_averages";
 import { getTeamColors } from "@/lib/teamColors";
+import {
+  TeamSubnav,
+  type TeamView,
+} from "@/components/ux/TeamSubnav";
+import { WeekChip } from "@/components/ux/WeekChip";
+import { DoubleWeekBanner } from "@/components/ux/DoubleWeekBanner";
+import { ScheduleStrip } from "@/components/ux/ScheduleStrip";
+import { DensityCard } from "@/components/ux/DensityCard";
+import { FilterMenu, type HaFilter } from "@/components/ux/FilterMenu";
+import { AutosaveToast } from "@/components/ux/AutosaveToast";
+import {
+  EmptyShell,
+  LoadingShell,
+  ErrorShell,
+} from "@/components/ux/Shells";
+import {
+  YAHOO_WEEKS_2026_27,
+  defaultWeekNumber,
+  getYahooWeek,
+  type YahooWeek,
+} from "@/lib/yahooWeeks";
+import type { DayStripCell, RosterDensity } from "@/lib/scheduleWeek";
 import styles from "./TeamBoard.module.css";
 
 type SearchHit = { player_id: string; full_name: string };
@@ -62,33 +84,53 @@ type RosterRowPayload = {
 };
 
 const TOAST_MS = 2000;
-/** Search against data season — 2026-27 Top-250 is empty until boxes. */
 const SEARCH_SEASON = TEAM_PRIOR_SEASON;
 
+function parseView(raw: string | null): TeamView {
+  if (raw === "matchup" || raw === "density" || raw === "compare" || raw === "roster")
+    return raw;
+  return "roster";
+}
+
 export function TeamBoard() {
+  const searchParams = useSearchParams();
+  const initialView = parseView(searchParams.get("view"));
+  const initialWeek = Number.parseInt(searchParams.get("week") || "", 10);
+  const focusPlayer = searchParams.get("player_id");
+
+  const [view, setView] = useState<TeamView>(initialView);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [season, setSeason] = useState<SeasonId>(TEAM_DEFAULT_SEASON);
-  const [mode, setMode] = useState<CompareMode>("current");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [rows, setRows] = useState<RosterRowPayload[]>([]);
   const [loadingRows, setLoadingRows] = useState(false);
+  const [rowsError, setRowsError] = useState<string | null>(null);
   const [toast, setToast] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(
-    null
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
+  const [weekNum, setWeekNum] = useState(
+    Number.isFinite(initialWeek) ? initialWeek : defaultWeekNumber()
   );
-  const [savedHint, setSavedHint] = useState<string | null>(null);
+  const [ha, setHa] = useState<HaFilter>("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [weekLoading, setWeekLoading] = useState(false);
+  const [weekError, setWeekError] = useState<string | null>(null);
+  const [days, setDays] = useState<DayStripCell[]>([]);
+  const [density, setDensity] = useState<RosterDensity[]>([]);
+  const [weekSoftEmpty, setWeekSoftEmpty] = useState(false);
+
   const searchRef = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<number | null>(null);
   const searchTimer = useRef<number | null>(null);
 
+  const week: YahooWeek | null = getYahooWeek(weekNum);
+
   const showToast = useCallback(() => {
     setToast(true);
-    setSavedHint("just now");
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(false), TOAST_MS);
   }, []);
@@ -124,9 +166,11 @@ export function TeamBoard() {
   const loadRows = useCallback(async (ids: string[], seasonId: string) => {
     if (ids.length === 0) {
       setRows([]);
+      setRowsError(null);
       return;
     }
     setLoadingRows(true);
+    setRowsError(null);
     try {
       const qs = new URLSearchParams({
         player_ids: ids.join(","),
@@ -138,8 +182,9 @@ export function TeamBoard() {
       if (!res.ok) throw new Error(`team-roster ${res.status}`);
       const data = (await res.json()) as { players: RosterRowPayload[] };
       setRows(data.players ?? []);
-    } catch {
+    } catch (e) {
       setRows([]);
+      setRowsError(e instanceof Error ? e.message : "Failed to load roster");
     } finally {
       setLoadingRows(false);
     }
@@ -152,6 +197,80 @@ export function TeamBoard() {
       season
     );
   }, [hydrated, roster, season, loadRows]);
+
+  const rowById = useMemo(() => {
+    const m = new Map<string, RosterRowPayload>();
+    for (const r of rows) m.set(r.player_id, r);
+    return m;
+  }, [rows]);
+
+  const rosterWithTeams = useMemo(() => {
+    return roster.map((p) => {
+      const api = rowById.get(p.player_id);
+      return {
+        ...p,
+        team_abbreviation:
+          api?.team_abbreviation ?? p.team_abbreviation ?? null,
+      };
+    });
+  }, [roster, rowById]);
+
+  const loadWeek = useCallback(async () => {
+    if (!week) {
+      setWeekSoftEmpty(true);
+      setDays([]);
+      setDensity([]);
+      return;
+    }
+    setWeekLoading(true);
+    setWeekError(null);
+    try {
+      const teams = [
+        ...new Set(
+          rosterWithTeams
+            .map((p) => p.team_abbreviation)
+            .filter((t): t is string => Boolean(t))
+        ),
+      ];
+      const rosterParam = rosterWithTeams
+        .map(
+          (p) =>
+            `${p.player_id}|${encodeURIComponent(p.full_name)}|${p.team_abbreviation ?? ""}`
+        )
+        .join(";");
+      const qs = new URLSearchParams({
+        week: String(week.week_number),
+        homeAway: ha,
+      });
+      if (teams.length) qs.set("teams", teams.join(","));
+      if (rosterParam) qs.set("roster", rosterParam);
+      const res = await fetch(`/api/fantasy-week?${qs.toString()}`);
+      if (!res.ok) throw new Error(`fantasy-week ${res.status}`);
+      const data = await res.json();
+      if (data.soft_empty) {
+        setWeekSoftEmpty(true);
+        setDays([]);
+        setDensity([]);
+      } else {
+        setWeekSoftEmpty(false);
+        setDays(data.days ?? []);
+        setDensity(data.density ?? []);
+      }
+    } catch (e) {
+      setWeekError(e instanceof Error ? e.message : "Week load failed");
+      setDays([]);
+      setDensity([]);
+    } finally {
+      setWeekLoading(false);
+    }
+  }, [week, rosterWithTeams, ha]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (view === "matchup" || view === "density" || view === "roster") {
+      void loadWeek();
+    }
+  }, [hydrated, view, loadWeek]);
 
   const runSearch = useCallback(async (q: string) => {
     const trimmed = q.trim();
@@ -188,11 +307,10 @@ export function TeamBoard() {
   const addPlayer = useCallback(
     (hit: SearchHit) => {
       if (rosterHasPlayer(roster, hit.player_id)) return;
-      const next = [
+      persist([
         ...roster,
         { player_id: hit.player_id, full_name: hit.full_name },
-      ];
-      persist(next);
+      ]);
       setQuery("");
       setHits([]);
       setSearchOpen(false);
@@ -222,16 +340,9 @@ export function TeamBoard() {
     setPendingRemoveId(null);
   }, [confirmClear, persist]);
 
-  const rowById = useMemo(() => {
-    const m = new Map<string, RosterRowPayload>();
-    for (const r of rows) m.set(r.player_id, r);
-    return m;
-  }, [rows]);
-
   const priorLabel = seasonShortLabel(TEAM_PRIOR_SEASON);
   const currentLabel = seasonShortLabel(season);
-  const anyCurrent =
-    rows.some((r) => r.current != null) || false;
+  const anyCurrent = rows.some((r) => r.current != null);
   const softEmptySeason =
     hydrated &&
     roster.length > 0 &&
@@ -239,63 +350,103 @@ export function TeamBoard() {
     !anyCurrent &&
     season === TEAM_DEFAULT_SEASON;
 
+  const weekChips = YAHOO_WEEKS_2026_27.filter(
+    (w) =>
+      Math.abs(w.week_number - weekNum) <= 2 ||
+      w.is_double_week ||
+      w.is_partial_week
+  ).slice(0, 8);
+
+  // Prefer nearby chips around selected
+  const chipWindow = useMemo(() => {
+    const start = Math.max(1, weekNum - 2);
+    const end = Math.min(23, start + 5);
+    return YAHOO_WEEKS_2026_27.filter(
+      (w) => w.week_number >= start && w.week_number <= end
+    );
+  }, [weekNum]);
+
+  void weekChips;
+
   return (
     <div className={styles.wrap}>
       <header className={styles.head}>
-        <h1 className={styles.title}>
-          Team
-          {hydrated && roster.length > 0 ? (
-            <span className={styles.titleMeta}> · {roster.length} saved</span>
-          ) : null}
-        </h1>
-        <p className={styles.sub}>
-          Roster save · {TEAM_DEFAULT_SEASON} reg_only default · prior compare{" "}
-          {TEAM_PRIOR_SEASON}
-        </p>
+        <div className={styles.headRow}>
+          <div>
+            <p className={styles.kicker}>Workspace Team</p>
+            <h1 className={styles.title}>
+              Midnight Flash
+              {hydrated && roster.length > 0 ? (
+                <span className={styles.titleMeta}>
+                  {" "}
+                  · {roster.length} saved
+                </span>
+              ) : null}
+            </h1>
+          </div>
+          {(view === "matchup" || view === "density") && (
+            <FilterMenu
+              ha={ha}
+              onHa={setHa}
+              open={filtersOpen}
+              onToggle={() => setFiltersOpen((o) => !o)}
+            />
+          )}
+        </div>
       </header>
 
-      <div className={styles.stack}>
-        {/* Zone A — Roster rail */}
-        <section className={styles.panel} aria-label="Roster rail">
+      <TeamSubnav active={view} onChange={setView} />
+
+      {view === "roster" ? (
+        <section className={styles.panel} aria-label="Active roster">
           <div className={styles.panelHead}>
-            <h2 className={styles.panelTitle}>
-              {roster.length === 0
-                ? "Empty roster"
-                : `Saved roster · ${roster.length} player${
-                    roster.length === 1 ? "" : "s"
-                  }`}
-            </h2>
-            {roster.length > 0 ? (
-              <p className={styles.panelMeta}>
-                Saved locally
-                {savedHint ? ` · ${savedHint}` : ""}
-              </p>
-            ) : null}
+            <h2 className={styles.panelTitle}>Active roster</h2>
+            <p className={styles.panelMeta}>
+              {roster.length} / 15
+              {week ? ` · W${week.week_number}` : ""}
+            </p>
           </div>
 
-          {roster.length === 0 ? (
-            <div className={styles.emptyRoster}>
-              <p className={styles.emptyCopy}>No players saved yet</p>
-              <Link href="/player" className={styles.ctaPrimary}>
-                Add from Player →
-              </Link>
-              <p className={styles.orSearch}>Or search here to add</p>
-            </div>
+          {!hydrated || loadingRows ? (
+            <LoadingShell label="Loading roster…" />
+          ) : rowsError ? (
+            <ErrorShell
+              message={rowsError}
+              onRetry={() =>
+                void loadRows(
+                  roster.map((r) => r.player_id),
+                  season
+                )
+              }
+            />
+          ) : roster.length === 0 ? (
+            <EmptyShell
+              title="No players saved yet"
+              body="Add from Players or search below. Strip stays soft-empty until ≥1 player."
+              ctaHref="/players"
+              ctaLabel="Add from Players →"
+            />
           ) : (
             <ul className={styles.rosterList}>
-              {roster.map((p) => {
+              {rosterWithTeams.map((p) => {
                 const api = rowById.get(p.player_id);
-                const abbr =
-                  api?.team_abbreviation ?? p.team_abbreviation ?? null;
+                const abbr = p.team_abbreviation;
                 const color =
                   api?.chart_primary ??
                   getTeamColors(abbr)?.chartPrimary ??
                   null;
+                const dens = density.find((d) => d.player_id === p.player_id);
                 const confirming = pendingRemoveId === p.player_id;
+                const focused = focusPlayer === p.player_id;
                 return (
-                  <li key={p.player_id} className={styles.rosterRow}>
+                  <li
+                    key={p.player_id}
+                    className={
+                      focused ? `${styles.rosterRow} ${styles.rosterFocus}` : styles.rosterRow
+                    }
+                  >
                     <Link
-                      href={`/player?player_id=${encodeURIComponent(p.player_id)}`}
+                      href={`/players?player_id=${encodeURIComponent(p.player_id)}`}
                       className={styles.rosterLink}
                       scroll={false}
                     >
@@ -304,7 +455,10 @@ export function TeamBoard() {
                         {formatShortName(p.full_name)}
                       </span>
                       {abbr ? (
-                        <span className={styles.rosterAbbr}>{abbr}</span>
+                        <span className={styles.rosterAbbr}>
+                          {abbr}
+                          {dens ? ` ${dens.counting}g W${weekNum}` : ""}
+                        </span>
                       ) : null}
                     </Link>
                     <button
@@ -342,7 +496,8 @@ export function TeamBoard() {
                 onFocus={() => setSearchOpen(true)}
               />
             </label>
-            {searchOpen && (hits.length > 0 || searching || query.trim().length >= 2) ? (
+            {searchOpen &&
+            (hits.length > 0 || searching || query.trim().length >= 2) ? (
               <div className={styles.dropdown} role="listbox">
                 {searching && hits.length === 0 ? (
                   <div className={styles.dropHint}>Searching…</div>
@@ -397,25 +552,95 @@ export function TeamBoard() {
             </div>
           ) : null}
         </section>
+      ) : null}
 
-        {/* Zone B — Season analyze + mode */}
-        <section className={styles.panel} aria-label="Season analyze">
+      {view === "matchup" ? (
+        <div className={styles.stack}>
+          <div className={styles.weekRow}>
+            <div className={styles.chips}>
+              {chipWindow.map((w) => (
+                <WeekChip
+                  key={w.fantasy_week_id}
+                  week={w}
+                  selected={w.week_number === weekNum}
+                  onSelect={setWeekNum}
+                />
+              ))}
+            </div>
+            <p className={styles.weekLegend}>
+              * = 14-day · W1 short · Cup final doesn&apos;t count · Thanksgiving /
+              Christmas not double
+            </p>
+          </div>
+          {week?.is_double_week ? <DoubleWeekBanner week={week} /> : null}
+          {week?.is_partial_week ? (
+            <p className={styles.partialNote} role="status">
+              Week 1 is short (Tue–Sun · 6 days) — empty Mon is OK, not a bye.
+            </p>
+          ) : null}
+          {weekLoading ? (
+            <LoadingShell label="Loading matchup week…" />
+          ) : weekError ? (
+            <ErrorShell message={weekError} onRetry={() => void loadWeek()} />
+          ) : !week ? (
+            <EmptyShell
+              title="Week outside Yahoo table"
+              body="Soft-empty — date not in 2026–27 Game Week lookup."
+            />
+          ) : (
+            <ScheduleStrip
+              week={week}
+              days={days}
+              softEmpty={weekSoftEmpty || roster.length === 0}
+            />
+          )}
+        </div>
+      ) : null}
+
+      {view === "density" ? (
+        <div className={styles.stack}>
+          <div className={styles.weekRow}>
+            <div className={styles.chips}>
+              {chipWindow.map((w) => (
+                <WeekChip
+                  key={w.fantasy_week_id}
+                  week={w}
+                  selected={w.week_number === weekNum}
+                  onSelect={setWeekNum}
+                />
+              ))}
+            </div>
+          </div>
+          {weekLoading ? (
+            <LoadingShell label="Loading density…" />
+          ) : weekError ? (
+            <ErrorShell message={weekError} onRetry={() => void loadWeek()} />
+          ) : week ? (
+            <DensityCard
+              week={week}
+              rows={density}
+              softEmpty={roster.length === 0 || weekSoftEmpty}
+            />
+          ) : (
+            <EmptyShell
+              title="Week outside Yahoo table"
+              body="Soft-empty — no density without a Game Week."
+            />
+          )}
+        </div>
+      ) : null}
+
+      {view === "compare" ? (
+        <section className={styles.panel} aria-label="Compare prior">
           <div className={styles.filterBar}>
             <SeasonSelect
               options={SEASON_OPTIONS}
               value={season}
-              onChange={(next) => {
-                setSeason(next);
-                // no scroll-jump — state only
-              }}
+              onChange={setSeason}
               label="Season"
             />
             <div className={styles.scopeGroup} role="group" aria-label="Scope">
-              <button
-                type="button"
-                className={styles.scopeOn}
-                aria-pressed="true"
-              >
+              <button type="button" className={styles.scopeOn} aria-pressed="true">
                 Regular
               </button>
               <button
@@ -423,155 +648,48 @@ export function TeamBoard() {
                 className={styles.scopeOff}
                 disabled
                 title="Playoffs OFF this bake"
-                aria-disabled="true"
               >
                 Playoffs
               </button>
             </div>
             <span className={styles.filterLabel}>
-              Roster averages · {mode === "compare" ? "compare" : "current"}
-            </span>
-          </div>
-
-          <div className={styles.modeBar} role="group" aria-label="Compare mode">
-            <span className={styles.modeLabel}>Mode:</span>
-            <button
-              type="button"
-              className={
-                mode === "current" ? styles.modeOn : styles.modeBtn
-              }
-              aria-pressed={mode === "current"}
-              onClick={() => setMode("current")}
-            >
-              Current only
-            </button>
-            <button
-              type="button"
-              className={
-                mode === "compare" ? styles.modeOn : styles.modeBtn
-              }
-              aria-pressed={mode === "compare"}
-              onClick={() => setMode("compare")}
-            >
-              Compare prior
-            </button>
-            <span className={styles.modeHint}>
               Prior locked {TEAM_PRIOR_SEASON} {TEAM_DEFAULT_SCOPE}
             </span>
           </div>
 
           {roster.length === 0 ? (
-            <div className={styles.softEmpty} role="status">
-              Add players to the roster to see averages.
-              <div>
-                <Link href="/player" className={styles.ctaLink}>
-                  Add from Player →
-                </Link>
-              </div>
-            </div>
-          ) : softEmptySeason && mode === "current" ? (
-            <div className={styles.softEmpty} role="status">
-              <p className={styles.softTitle}>
-                {TEAM_DEFAULT_SEASON} boxes not in yet
-              </p>
-              <p className={styles.softCopy}>
-                Schedule can show · game logs stay empty. Do not invent scores ·
-                cells stay —.
-              </p>
-              <button
-                type="button"
-                className={styles.ctaSecondary}
-                onClick={() => setMode("compare")}
-              >
-                Compare prior year {TEAM_PRIOR_SEASON} →
-              </button>
-            </div>
-          ) : null}
-
-          {roster.length > 0 ? (
-            <div className={styles.scroll}>
-              {mode === "current" ? (
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th scope="col">Player</th>
-                      <th scope="col">GP</th>
-                      <th scope="col">PTS</th>
-                      <th scope="col">REB</th>
-                      <th scope="col">AST</th>
-                      <th scope="col">Δ vs PY</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {roster.map((p) => {
-                      const api = rowById.get(p.player_id);
-                      const cur = api?.current ?? null;
-                      const prior = api?.prior ?? null;
-                      const abbr =
-                        api?.team_abbreviation ?? p.team_abbreviation ?? null;
-                      const color =
-                        api?.chart_primary ??
-                        getTeamColors(abbr)?.chartPrimary ??
-                        null;
-                      const dPtsLabel = formatDeltaVsPy(
-                        cur?.avg_pts,
-                        prior?.avg_pts
-                      );
-                      const dPts = deltaValue(cur?.avg_pts, prior?.avg_pts);
-                      const pol = deltaPolarity("avg_pts", dPts);
-                      return (
-                        <tr key={p.player_id}>
-                          <td>
-                            <Link
-                              href={`/player?player_id=${encodeURIComponent(p.player_id)}`}
-                              className={styles.playerCell}
-                              scroll={false}
-                            >
-                              <TeamMarkPip color={color} size={7} />
-                              {formatShortName(p.full_name)}
-                            </Link>
-                          </td>
-                          <td className={cur ? undefined : styles.muted}>
-                            {cur ? cur.gp : "—"}
-                          </td>
-                          <td className={cur ? undefined : styles.muted}>
-                            {formatAvg(cur?.avg_pts)}
-                          </td>
-                          <td className={cur ? undefined : styles.muted}>
-                            {formatAvg(cur?.avg_reb)}
-                          </td>
-                          <td className={cur ? undefined : styles.muted}>
-                            {formatAvg(cur?.avg_ast)}
-                          </td>
-                          <td
-                            className={
-                              dPtsLabel === "see PY" || dPtsLabel === "n/a"
-                                ? styles.mutedNa
-                                : pol === "improve"
-                                  ? styles.deltaImprove
-                                  : pol === "decline"
-                                    ? styles.deltaDecline
-                                    : undefined
-                            }
-                          >
-                            {dPtsLabel === "see PY" ? (
-                              <button
-                                type="button"
-                                className={styles.seePy}
-                                onClick={() => setMode("compare")}
-                              >
-                                see PY
-                              </button>
-                            ) : (
-                              dPtsLabel
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
+            <EmptyShell
+              title="Add players to compare"
+              body="Compare binds TEAM-COMPARE-RULES — 2026-27 vs 2025-26 reg_only."
+              ctaHref="/players"
+              ctaLabel="Add from Players →"
+            />
+          ) : loadingRows ? (
+            <LoadingShell label="Loading compare…" />
+          ) : rowsError ? (
+            <ErrorShell
+              message={rowsError}
+              onRetry={() =>
+                void loadRows(
+                  roster.map((r) => r.player_id),
+                  season
+                )
+              }
+            />
+          ) : (
+            <>
+              {softEmptySeason ? (
+                <div className={styles.softEmpty} role="status">
+                  <p className={styles.softTitle}>
+                    {TEAM_DEFAULT_SEASON} boxes not in yet
+                  </p>
+                  <p className={styles.softCopy}>
+                    Current cells stay — · prior {TEAM_PRIOR_SEASON} still
+                    renders · no invented scores.
+                  </p>
+                </div>
+              ) : null}
+              <div className={styles.scroll}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
@@ -616,7 +734,7 @@ export function TeamBoard() {
                         <tr key={p.player_id}>
                           <td className={styles.stickyPlayer}>
                             <Link
-                              href={`/player?player_id=${encodeURIComponent(p.player_id)}`}
+                              href={`/players?player_id=${encodeURIComponent(p.player_id)}`}
                               className={styles.playerCell}
                               scroll={false}
                             >
@@ -650,27 +768,68 @@ export function TeamBoard() {
                     })}
                   </tbody>
                 </table>
-              )}
-            </div>
-          ) : null}
-
-          {loadingRows && roster.length > 0 ? (
-            <p className={styles.loading}>Loading averages…</p>
-          ) : null}
-
-          <p className={styles.foot}>
-            Current {season} · scope {TEAM_DEFAULT_SCOPE} · prior{" "}
-            {TEAM_PRIOR_SEASON} · Δ = current − prior when both exist · mart
-            avg only · rules: TEAM-COMPARE-RULES.md
-          </p>
+              </div>
+              {/* Compact current Δ vs PY affordance */}
+              <div className={styles.scroll} style={{ marginTop: "1rem" }}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th scope="col">Player</th>
+                      <th scope="col">GP</th>
+                      <th scope="col">PTS</th>
+                      <th scope="col">Δ vs PY</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {roster.map((p) => {
+                      const api = rowById.get(p.player_id);
+                      const cur = api?.current ?? null;
+                      const prior = api?.prior ?? null;
+                      const dPtsLabel = formatDeltaVsPy(
+                        cur?.avg_pts,
+                        prior?.avg_pts
+                      );
+                      const dPts = deltaValue(cur?.avg_pts, prior?.avg_pts);
+                      const pol = deltaPolarity("avg_pts", dPts);
+                      return (
+                        <tr key={`cur-${p.player_id}`}>
+                          <td>{formatShortName(p.full_name)}</td>
+                          <td className={cur ? undefined : styles.muted}>
+                            {cur ? cur.gp : "—"}
+                          </td>
+                          <td className={cur ? undefined : styles.muted}>
+                            {formatAvg(cur?.avg_pts)}
+                          </td>
+                          <td
+                            className={
+                              dPtsLabel === "see PY" || dPtsLabel === "n/a"
+                                ? styles.mutedNa
+                                : pol === "improve"
+                                  ? styles.deltaImprove
+                                  : pol === "decline"
+                                    ? styles.deltaDecline
+                                    : undefined
+                            }
+                          >
+                            {dPtsLabel}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className={styles.foot}>
+                Current {season} · scope {TEAM_DEFAULT_SCOPE} · prior{" "}
+                {TEAM_PRIOR_SEASON} · Δ = current − prior · avg_fg3m only ·
+                TEAM-COMPARE-RULES.md
+              </p>
+            </>
+          )}
         </section>
-      </div>
-
-      {toast ? (
-        <div className={styles.toast} role="status" aria-live="polite">
-          Roster saved on this device
-        </div>
       ) : null}
+
+      <AutosaveToast visible={toast} />
     </div>
   );
 }

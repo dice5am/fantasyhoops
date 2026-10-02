@@ -1,55 +1,8 @@
-import { HomeDashboard } from "@/components/HomeDashboard";
-import { getLeagueContext } from "@/lib/loadMart";
-import { getFantasyScores } from "@/lib/loadFantasyScores";
-import { parseScope, parseSeason } from "@/lib/scope";
-import { parseTopPct } from "@/lib/top250";
+import { redirect } from "next/navigation";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{
-  scope?: string;
-  season?: string;
-  topPct?: string;
-  /** @deprecated legacy — maps to topPct 100 */
-  universe?: string;
-}>;
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const sp = await searchParams;
-  const season = parseSeason(sp.season);
-  const scope = parseScope(sp.scope);
-  const topPct =
-    sp.topPct != null && sp.topPct !== ""
-      ? parseTopPct(sp.topPct)
-      : sp.universe != null && sp.universe !== ""
-        ? 100
-        : parseTopPct(undefined);
-
-  const [context, fantasy] = await Promise.all([
-    getLeagueContext({
-      season,
-      season_type_scope: scope,
-      topPct,
-    }),
-    getFantasyScores({
-      season,
-      season_type_scope: scope,
-      topPct,
-    }).catch(() => null),
-  ]);
-
-  return (
-    <HomeDashboard
-      context={context}
-      season={season}
-      scope={scope}
-      topPct={topPct}
-      initialFantasy={fantasy}
-    />
-  );
+/** Mix A+C: `/` → Team. Home Pulse lives under Insights. */
+export default function RootPage() {
+  redirect("/team");
 }

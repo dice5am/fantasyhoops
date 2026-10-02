@@ -4,37 +4,36 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./AppNav.module.css";
 
+/** Mix A+C lock: Team · Players · Insights — NO Home, NO Schedule tab. */
 const TABS = [
-  { href: "/", label: "Home", match: (p: string) => p === "/" },
-  {
-    href: "/player",
-    label: "Player",
-    match: (p: string) => p.startsWith("/player"),
-  },
   {
     href: "/team",
     label: "Team",
     match: (p: string) => p.startsWith("/team"),
   },
   {
-    href: "/insight",
-    label: "Insight",
-    match: (p: string) => p.startsWith("/insight"),
+    href: "/players",
+    label: "Players",
+    match: (p: string) =>
+      p.startsWith("/players") || p.startsWith("/player"),
   },
   {
-    href: "/schedule",
-    label: "Schedule",
-    match: (p: string) => p.startsWith("/schedule"),
+    href: "/insights",
+    label: "Insights",
+    match: (p: string) =>
+      p.startsWith("/insights") || p.startsWith("/insight"),
   },
 ] as const;
 
 export function AppNav() {
-  const pathname = usePathname() || "/";
+  const pathname = usePathname() || "/team";
 
   return (
     <nav className={styles.nav} aria-label="Primary">
       <div className={styles.brand}>
-        <span className={styles.brandMark}>🏀</span>
+        <span className={styles.brandMark} aria-hidden>
+          ●
+        </span>
         <span className={styles.brandText}>FantasyHoops</span>
       </div>
       <div className={styles.tabs} role="tablist">
@@ -52,6 +51,9 @@ export function AppNav() {
             </Link>
           );
         })}
+      </div>
+      <div className={styles.season} aria-label="Season">
+        2026-27
       </div>
     </nav>
   );

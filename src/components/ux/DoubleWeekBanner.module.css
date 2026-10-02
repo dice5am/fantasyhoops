@@ -1,0 +1,43 @@
+.banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid var(--fh-border);
+  background: rgba(30, 30, 34, 0.62);
+  backdrop-filter: blur(22px) saturate(var(--fh-glass-saturate));
+  box-shadow: var(--fh-edge-top), var(--fh-edge-left);
+}
+.copy {
+  min-width: 0;
+}
+.title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fh-champagne-text);
+}
+.body,
+.context {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--fh-text-muted);
+  line-height: 1.45;
+}
+.context {
+  margin-top: 0.35rem;
+  color: var(--fh-text-dim);
+}
+.badge {
+  flex-shrink: 0;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--fh-champagne-text);
+  border: 1px solid var(--fh-border-strong);
+  background: var(--fh-champagne-soft);
+}

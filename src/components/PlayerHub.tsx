@@ -35,7 +35,7 @@ export function PlayerHub({
       season={season}
       scope={scope}
       compact
-      filterBasePath="/player"
+      filterBasePath="/players"
       selectInPlace
     />
   );

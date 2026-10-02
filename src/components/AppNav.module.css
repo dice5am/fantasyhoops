@@ -121,3 +121,25 @@
     font-size: 0.88rem;
   }
 }
+
+.season {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--fh-border);
+  color: var(--fh-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+.brandMark {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fh-champagne-pop);
+  box-shadow: 0 0 10px var(--fh-champagne-glow);
+  font-size: 0;
+  display: inline-block;
+}

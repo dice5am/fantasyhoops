@@ -1,0 +1,103 @@
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 2rem;
+}
+.head {
+  margin-bottom: 0.75rem;
+}
+.kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fh-text-dim);
+}
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.title {
+  margin: 0.15rem 0 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--fh-champagne-text);
+}
+.note {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--fh-text-dim);
+}
+.seg {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid var(--fh-border);
+  overflow: hidden;
+  background: rgba(10, 10, 11, 0.55);
+}
+.segBtn,
+.segOn {
+  min-height: 40px;
+  padding: 0.4rem 0.95rem;
+  border: none;
+  background: transparent;
+  color: var(--fh-text-muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+.segOn {
+  background: var(--fh-champagne);
+  color: #121214;
+}
+.pulse :global(.wrap),
+.pulse > * {
+  /* HomeDashboard brings its own max-width padding — tighten */
+}
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.feedItem {
+  margin: 0;
+}
+.feedCard {
+  display: block;
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid var(--fh-border);
+  background: rgba(30, 30, 34, 0.62);
+  backdrop-filter: blur(22px);
+}
+.feedMeta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--fh-text-dim);
+}
+.feedTitle {
+  margin: 0.4rem 0 0.25rem;
+  font-size: 1.1rem;
+  color: var(--fh-champagne-text);
+}
+.feedSummary {
+  margin: 0;
+  color: var(--fh-text-muted);
+  font-size: 0.9rem;
+}
+.feedCta {
+  display: inline-block;
+  margin-top: 0.65rem;
+  font-weight: 600;
+  color: var(--fh-champagne);
+  font-size: 0.85rem;
+}
+.empty {
+  color: var(--fh-text-muted);
+}

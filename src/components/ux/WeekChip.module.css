@@ -1,0 +1,32 @@
+.chip,
+.chipOn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  border: 1px solid var(--fh-border);
+  background: rgba(18, 18, 20, 0.65);
+  color: var(--fh-text-muted);
+  cursor: pointer;
+  transition: background var(--fh-motion) ease, color var(--fh-motion) ease,
+    box-shadow var(--fh-motion) ease;
+}
+.chip:hover:not(:disabled) {
+  color: var(--fh-champagne-text);
+  background: var(--fh-champagne-soft);
+}
+.chipOn {
+  background: var(--fh-champagne);
+  color: #121214;
+  border-color: var(--fh-champagne-pop);
+  box-shadow: var(--fh-selected-bloom);
+}
+.chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

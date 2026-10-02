@@ -442,7 +442,7 @@ function PlayerExplorerInner({ hideRecent = false, averagesTable, outsideTop250 
     params.delete("player_id");
     params.delete("name");
     const q = params.toString();
-    const href = q ? `/player?${q}` : "/player";
+    const href = q ? `/players?${q}` : "/players";
     urlWriteLock.current = true;
     window.history.replaceState(window.history.state, "", href);
     router.replace(href, { scroll: false });

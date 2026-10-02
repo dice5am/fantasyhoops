@@ -73,5 +73,5 @@ export function buildPlayerUrl(opts: {
   params.set("scope", scope);
   params.set("stat", opts.stat);
   const q = params.toString();
-  return q ? `/player?${q}` : "/player";
+  return q ? `/players?${q}` : "/players";
 }

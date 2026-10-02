@@ -22,6 +22,7 @@ export type SeasonScheduleRow = {
   home_team_abbreviation: string | null;
   away_team_abbreviation: string | null;
   game_label: string | null;
+  game_subtype: string | null;
 };
 
 export type SeasonSchedulePayload = {

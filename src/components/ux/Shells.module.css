@@ -1,0 +1,64 @@
+.empty,
+.loading,
+.error {
+  border-radius: 16px;
+  border: 1px solid var(--fh-border);
+  background: var(--fh-surface);
+  backdrop-filter: blur(22px) saturate(var(--fh-glass-saturate));
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+.emptyTitle,
+.errorTitle {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  color: var(--fh-champagne-text);
+}
+.emptyBody,
+.errorBody,
+.loadingLabel {
+  margin: 0;
+  color: var(--fh-text-muted);
+  font-size: 0.9rem;
+}
+.cta,
+.retry {
+  display: inline-flex;
+  margin-top: 1rem;
+  padding: 0.55rem 1rem;
+  min-height: 44px;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--fh-border-strong);
+  background: var(--fh-champagne);
+  color: #121214;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.skel,
+.skelShort {
+  height: 12px;
+  border-radius: 8px;
+  margin: 0.55rem auto;
+  max-width: 280px;
+  background: linear-gradient(
+    90deg,
+    rgba(247, 231, 206, 0.08),
+    rgba(247, 231, 206, 0.18),
+    rgba(247, 231, 206, 0.08)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+.skelShort {
+  max-width: 160px;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

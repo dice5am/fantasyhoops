@@ -626,3 +626,47 @@
 .seePy:hover {
   color: var(--fh-champagne-pop);
 }
+
+/* Mix A+C workspace additions */
+.kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fh-text-dim);
+}
+.headRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.weekRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.weekLegend {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--fh-text-dim);
+}
+.partialNote {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--fh-border);
+  background: var(--fh-champagne-soft);
+  color: var(--fh-text-muted);
+  font-size: 0.85rem;
+}
+.rosterFocus {
+  box-shadow: var(--fh-selected-bloom);
+  border-radius: 10px;
+}
