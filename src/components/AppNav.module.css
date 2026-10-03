@@ -117,8 +117,9 @@
     flex: 1 1 0;
     text-align: center;
     min-height: 44px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.88rem;
+    padding: 0.5rem 0.35rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
   }
 }
 

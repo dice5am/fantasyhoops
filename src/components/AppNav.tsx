@@ -4,8 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./AppNav.module.css";
 
-/** Mix A+C lock: Team · Players · Insights — NO Home, NO Schedule tab. */
+/** Draft → Team → Players → Insights. No Home, no Schedule. */
 const TABS = [
+  {
+    href: "/draft",
+    label: "Draft",
+    match: (p: string) => p.startsWith("/draft"),
+  },
   {
     href: "/team",
     label: "Team",

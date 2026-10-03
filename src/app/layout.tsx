@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FantasyHoops — Team · Players · Insights",
+  title: "FantasyHoops — Draft · Team · Players · Insights",
   description:
-    "Mix A+C Team workspace, Players week card, Insights Pulse & Briefs",
+    "Draft assistant, Team workspace, Players, Insights Pulse & Briefs",
 };
 
 export default function RootLayout({
