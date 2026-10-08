@@ -27,6 +27,32 @@ function fmtNum(v: number | null | undefined): string {
   return String(Number(v.toFixed(2)));
 }
 
+/**
+ * Cheat-sheet value format: one decimal for scores, "%" when the list's
+ * metric is a percent, whole numbers for count lists. null → "n/a", never 0.
+ */
+type ValueKind = "percent" | "count" | "score";
+
+function valueKind(list: InsightList): ValueKind {
+  const metric = (list.metric_label ?? "").trim();
+  const label = (list.rows[0]?.value_label ?? "").trim();
+  // Percent when the metric itself is a percent ("Breakout chance %", "% of team
+  // games missed", "hot/cold (%)") — not when a % only appears in the method
+  // (e.g. "OFF blend (50% 3yr + 50% 2025-26)").
+  const pct = (t: string) => /(^%)|(%\s*$)|(\(%\))|(\bpercent\b)/i.test(t);
+  if (pct(metric) || (!metric && pct(label))) return "percent";
+  const vals = list.rows.map((r) => r.value).filter((v): v is number => typeof v === "number");
+  if (/^(players|games|count)\b/i.test(metric) && vals.every(Number.isInteger)) return "count";
+  return "score";
+}
+
+function fmtValue(v: number | null | undefined, kind: ValueKind): string {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "n/a";
+  if (kind === "count") return String(Math.round(v));
+  const s = v.toFixed(1);
+  return kind === "percent" ? `${s}%` : s;
+}
+
 /** "2–4" for consecutive runs, else "2, 5, 7". */
 function fmtRange(xs: number[]): string {
   if (xs.length === 0) return "";
@@ -76,7 +102,17 @@ type Props = {
   directory: { player_id: string; full_name: string }[];
 };
 
-function Row({ row, listId, avgs }: { row: InsightRow; listId: string; avgs: Record<string, StatLineValues> }) {
+function Row({
+  row,
+  listId,
+  kind,
+  avgs,
+}: {
+  row: InsightRow;
+  listId: string;
+  kind: ValueKind;
+  avgs: Record<string, StatLineValues>;
+}) {
   const missed = listId === "availability" ? row.stats.games_missed_3yr : undefined;
   return (
     <li className={styles.row}>
@@ -84,13 +120,14 @@ function Row({ row, listId, avgs }: { row: InsightRow; listId: string; avgs: Rec
       <div className={styles.body}>
         <div className={styles.line}>
           <span className={styles.name}>{formatShortName(row.full_name)}</span>
-          <span className={styles.value}>{fmtNum(row.value)}</span>
+          <span className={styles.value}>{fmtValue(row.value, kind)}</span>
         </div>
-        <div className={styles.sub}>
-          <span className={styles.valueLabel}>{row.value_label}</span>
-          {missed !== undefined ? <span>missed {fmtNum(missed)} games</span> : null}
-        </div>
-        {row.reason ? <p className={styles.reason}>{row.reason}</p> : null}
+        {row.reason || missed !== undefined ? (
+          <p className={styles.reason}>
+            {row.reason}
+            {missed !== undefined ? `${row.reason ? " · " : ""}missed ${fmtNum(missed)} games` : null}
+          </p>
+        ) : null}
         <StatLine values={avgs[row.player_id] ?? null} />
       </div>
     </li>
@@ -108,6 +145,7 @@ function ListCard({
 }) {
   const provisional = list.status === "provisional" || preliminary;
   const head = list.rows.slice(0, PREVIEW_ROWS);
+  const kind = valueKind(list);
   const rest = list.rows.slice(PREVIEW_ROWS);
   return (
     <section className={styles.card} id={`list-${list.id}`} aria-labelledby={`t-${list.id}`} data-list-id={list.id}>
@@ -124,7 +162,7 @@ function ListCard({
         <>
           <ol className={styles.rows}>
             {head.map((r, i) => (
-              <Row key={`${r.player_id}-${i}`} row={r} listId={list.id} avgs={avgs} />
+              <Row key={`${r.player_id}-${i}`} row={r} listId={list.id} kind={kind} avgs={avgs} />
             ))}
           </ol>
           {rest.length > 0 ? (
@@ -132,7 +170,7 @@ function ListCard({
               <summary>Show all {list.rows.length}</summary>
               <ol className={styles.rows}>
                 {rest.map((r, i) => (
-                  <Row key={`${r.player_id}-${i + PREVIEW_ROWS}`} row={r} listId={list.id} avgs={avgs} />
+                  <Row key={`${r.player_id}-${i + PREVIEW_ROWS}`} row={r} listId={list.id} kind={kind} avgs={avgs} />
                 ))}
               </ol>
             </details>
@@ -223,9 +261,8 @@ export function InsightsLists({ data, avgs, directory }: Props) {
                         <a href={`#list-${list.id}`} className={styles.hitLink}>
                           <span className={styles.hitTitle}>{list.title}</span>
                           <span className={styles.hitRank}>#{fmtNum(row.rank)}</span>
-                          <span className={styles.hitValue}>{fmtNum(row.value)}</span>
+                          <span className={styles.hitValue}>{fmtValue(row.value, valueKind(list))}</span>
                         </a>
-                        <span className={styles.hitLabel}>{row.value_label}</span>
                       </li>
                     ))}
                   </ul>
