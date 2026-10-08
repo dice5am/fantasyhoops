@@ -1382,3 +1382,13 @@
   height: 1px;
   background: rgba(247, 231, 206, 0.14);
 }
+
+/* Draft v3 tier headers (Design §5): ~24px separator, small caps, dim range, hairline; not sticky. */
+.board tr.tierRow td {
+  height: 24px;
+  padding-top: 0.5rem;
+}
+.tierName {
+  color: #d4c4ae;
+  font-weight: 600;
+}

@@ -8,6 +8,7 @@ import type { ListMembership } from "@/lib/draftListMembership";
 import { BAND_CATS, bandCuts, bandOf, statLineBands, topPoolIds, type BandCuts } from "@/lib/draftBands";
 import type { NineScoreKey } from "@/types/hot_cold";
 import { reasonLine, teamMeans, weakCats } from "@/lib/draftReasons";
+import { TIER_RANGES, tierOf } from "@/lib/draftTiers";
 import { baselinesFor } from "@/lib/teamRollup";
 import { TeamMarkPip } from "@/components/TeamMarkPip";
 import { formatShortName } from "@/lib/formatName";
@@ -692,10 +693,16 @@ function BoardBlock(props: {
     return bandCuts(ids.map((id) => byId.get(id)!.scores));
   }, [players]);
   // Shading on the selected view (Analyst): top 200 by overall in that view.
-  const viewCuts = useMemo(() => {
-    const ids = new Set(topPoolIds(players, (p) => p.player_id, (p) => vectorOf(p, props.windowMode).o1));
-    return bandCuts(players.filter((p) => ids.has(p.player_id)).map((p) => vectorOf(p, props.windowMode)));
-  }, [players, props.windowMode]);
+  const viewTop = useMemo(
+    () => new Set(topPoolIds(players, (p) => p.player_id, (p) => vectorOf(p, props.windowMode).o1)),
+    [players, props.windowMode]
+  );
+  const viewCuts = useMemo(
+    () => bandCuts(players.filter((p) => viewTop.has(p.player_id)).map((p) => vectorOf(p, props.windowMode))),
+    [players, viewTop, props.windowMode]
+  );
+  // Tiers: separators only, on Overall with no search and no list sort.
+  const showTiers = props.sortKey === "o1" && !props.sortList && !q;
   const reasons = useMemo(() => {
     const m = new Map<string, string | null>();
     for (const row of suggestions.slice(0, 6)) {
@@ -829,11 +836,39 @@ function BoardBlock(props: {
                 <tbody>
                   {shown.slice(0, limit).map((row, i, arr) => {
                     const divider = available.listCount != null && !row.inList && (i === 0 ? false : arr[i - 1].inList);
+                    const o1 = vectorOf(row.player, props.windowMode).o1;
+                    const inTop = viewTop.has(row.player.player_id);
+                    const tier = showTiers && inTop && finite(o1) ? tierOf(o1, props.windowMode) : null;
+                    const prev = i > 0 ? arr[i - 1] : null;
+                    const prevO1 = prev ? vectorOf(prev.player, props.windowMode).o1 : null;
+                    const prevTier =
+                      prev && viewTop.has(prev.player.player_id) && finite(prevO1) ? tierOf(prevO1, props.windowMode) : null;
+                    const tierHead = tier != null && tier !== prevTier ? tier : null;
+                    const beyond = showTiers && !inTop && (prev == null || viewTop.has(prev.player.player_id));
                     const scores = vectorOf(row.player, props.windowMode);
                     const n = row.player.three_yr?.n_seasons_used;
                     const color = getTeamColors(row.player.team_abbreviation)?.chartPrimary;
                     return (
                       <Fragment key={row.player.player_id}>
+                      {tierHead != null ? (
+                        <tr className={styles.tierRow}>
+                          <td colSpan={99}>
+                            <span className={styles.tierLabel}>
+                              <span className={styles.tierName}>Tier {tierHead}</span>
+                              <span>
+                                · {TIER_RANGES[props.windowMode][tierHead - 1][0]}–{TIER_RANGES[props.windowMode][tierHead - 1][1]}
+                              </span>
+                            </span>
+                          </td>
+                        </tr>
+                      ) : null}
+                      {beyond ? (
+                        <tr className={styles.tierRow}>
+                          <td colSpan={99}>
+                            <span className={styles.tierLabel}>Beyond top 200</span>
+                          </td>
+                        </tr>
+                      ) : null}
                       {divider ? (
                         <tr className={styles.dividerRow}>
                           <td colSpan={99}>
