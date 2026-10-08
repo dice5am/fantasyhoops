@@ -68,7 +68,7 @@ export function readPrefs(): DraftPrefs {
   const v = readJson<Partial<DraftPrefs>>(DRAFT_PREFS_KEY, {});
   return {
     windowMode: v.windowMode === "three_yr" ? "three_yr" : "last",
-    suggestMode: v.suggestMode === "stack" ? "stack" : "cover",
+    suggestMode: v.suggestMode === "cover" ? "cover" : "stack",
   };
 }
 

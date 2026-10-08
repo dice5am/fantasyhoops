@@ -121,7 +121,7 @@ export function DraftAssistant() {
   const [setupError, setSetupError] = useState<string | null>(null);
 
   const [windowMode, setWindowMode] = useState<ScoreWindow>("last");
-  const [suggestMode, setSuggestMode] = useState<SuggestMode>("cover");
+  const [suggestMode, setSuggestMode] = useState<SuggestMode>("stack");
   const [sortKey, setSortKey] = useState<SortKey>("o1");
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [taken, setTaken] = useState<TakenPlayer[]>([]);

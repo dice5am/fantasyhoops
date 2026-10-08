@@ -1071,3 +1071,14 @@
 .rail {
   position: static;
 }
+
+/* Phone: name + selected-chip score + Mine/Taken only; other score columns hidden (desktop unchanged). */
+@media (max-width: 640px) {
+  .board th.thMore,
+  .board td.tdMore {
+    display: none;
+  }
+  .boardWrap {
+    overflow-x: hidden;
+  }
+}

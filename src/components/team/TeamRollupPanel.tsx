@@ -250,7 +250,6 @@ export function TeamRollupPanel(props: {
                 <td>{fmtScore(base.slot?.scores[sp.key])}</td>
                 <td className={styles.hotCell}>
                   {empty ? "—" : fmtHotPct(hot.mean)}
-                  {!empty && hot.n > 0 ? <span className={styles.hotN}> ·{hot.n}</span> : null}
                 </td>
               </tr>
             );
