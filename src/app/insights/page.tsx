@@ -4,6 +4,7 @@ import { getFantasyScores } from "@/lib/loadFantasyScores";
 import { parseScope, parseSeason } from "@/lib/scope";
 import { parseTopPct } from "@/lib/top250";
 import { getInsightPosts } from "@/lib/insights";
+import { getInsightLists } from "@/lib/loadInsightLists";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,6 +63,7 @@ export default async function InsightsPage({
       initialFantasy={fantasy}
       posts={posts}
       initialSegment={sp.segment === "briefs" ? "briefs" : "pulse"}
+      insightLists={getInsightLists()}
     />
   );
 }

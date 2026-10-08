@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { HomeDashboard } from "@/components/HomeDashboard";
+import { InsightLists } from "@/components/InsightLists";
+import type { InsightListsPayload } from "@/lib/loadInsightLists";
 import type { LeagueContextPayload } from "@/lib/leagueAggregates";
 import type { FantasyScoresPayload } from "@/types/fantasy_score";
 import type { SeasonTypeScope } from "@/types/season_player_averages";
@@ -25,6 +27,8 @@ type Props = {
   initialFantasy?: FantasyScoresPayload | null;
   posts: InsightPostMeta[];
   initialSegment?: "pulse" | "briefs";
+  /** Analyst lists (validated). Null → section hidden. */
+  insightLists?: InsightListsPayload | null;
 };
 
 export function InsightsBoard({
@@ -35,6 +39,7 @@ export function InsightsBoard({
   initialFantasy,
   posts,
   initialSegment = "pulse",
+  insightLists = null,
 }: Props) {
   const [seg, setSeg] = useState<"pulse" | "briefs">(initialSegment);
 
@@ -67,6 +72,8 @@ export function InsightsBoard({
         </div>
         <p className={styles.note}>No full-league slate · Team owns schedule</p>
       </header>
+
+      {insightLists ? <InsightLists data={insightLists} /> : null}
 
       {seg === "pulse" ? (
         <div className={styles.pulse}>
