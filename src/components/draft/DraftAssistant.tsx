@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StatLine } from "@/components/StatLine";
 import { ListIconLegend, ListIconRow } from "@/components/draft/ListIcons";
 import type { ListMembership } from "@/lib/draftListMembership";
+import { bandCuts, topPoolIds } from "@/lib/draftBands";
 import { reasonLine, teamMeans, weakCats } from "@/lib/draftReasons";
 import { baselinesFor } from "@/lib/teamRollup";
 import { TeamMarkPip } from "@/components/TeamMarkPip";
@@ -664,13 +665,19 @@ function BoardBlock(props: {
     const avg = baselinesFor(hotColdBase?.baselines.teams, props.setup.n, props.setup.s).league?.scores;
     return weakCats(teamMeans(rosterLast), avg ?? null);
   }, [players, props.roster, hotColdBase, props.setup]);
+  // Bands on Last (the reason line reads Last scores, same as You vs Avg).
+  const lastCuts = useMemo(() => {
+    const byId = new Map(players.map((p) => [p.player_id, p]));
+    const ids = topPoolIds(players, (p) => p.player_id, (p) => p.scores.o1);
+    return bandCuts(ids.map((id) => byId.get(id)!.scores));
+  }, [players]);
   const reasons = useMemo(() => {
     const m = new Map<string, string | null>();
     for (const row of suggestions.slice(0, 6)) {
-      m.set(row.player.player_id, reasonLine(row.player.scores, weak, props.roster.length > 0));
+      m.set(row.player.player_id, reasonLine(row.player.scores, weak, props.roster.length > 0, lastCuts));
     }
     return m;
-  }, [suggestions, weak, props.roster.length]);
+  }, [suggestions, weak, props.roster.length, lastCuts]);
 
   // Pick clock: overall pick now, and how many picks until yours (DRAFT-RULES §1).
   const picksMade = props.roster.length + props.taken.length;
