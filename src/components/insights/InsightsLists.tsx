@@ -125,7 +125,7 @@ function Row({
         {row.reason || missed !== undefined ? (
           <p className={styles.reason}>
             {row.reason}
-            {missed !== undefined ? `${row.reason ? " · " : ""}missed ${fmtNum(missed)} games` : null}
+            {!row.reason && missed !== undefined ? `missed ${fmtNum(missed)} games` : null}
           </p>
         ) : null}
         <StatLine values={avgs[row.player_id] ?? null} />
