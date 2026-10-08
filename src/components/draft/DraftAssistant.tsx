@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StatLine } from "@/components/StatLine";
+import { ListIconLegend, ListIconRow } from "@/components/draft/ListIcons";
+import type { ListMembership } from "@/lib/draftListMembership";
 import { reasonLine, teamMeans, weakCats } from "@/lib/draftReasons";
 import { baselinesFor } from "@/lib/teamRollup";
 import { TeamMarkPip } from "@/components/TeamMarkPip";
@@ -112,7 +114,7 @@ function gpOf(player: DraftBoardPlayer, window: ScoreWindow): number | null {
   return finite(player.gp) ? player.gp : null;
 }
 
-export function DraftAssistant() {
+export function DraftAssistant(props: { membership?: ListMembership | null } = {}) {
   const [hydrated, setHydrated] = useState(false);
   const [phase, setPhase] = useState<Phase>("empty");
   const [setup, setSetup] = useState<DraftSetup | null>(null);
@@ -344,6 +346,7 @@ export function DraftAssistant() {
 
       {phase === "board" && setup ? (
         <BoardBlock
+          membership={props.membership ?? null}
           setup={setup}
           windowMode={windowMode}
           sortKey={sortKey}
@@ -571,6 +574,7 @@ function LoadingBlock() {
 }
 
 function BoardBlock(props: {
+  membership: ListMembership | null;
   setup: DraftSetup;
   windowMode: ScoreWindow;
   sortKey: SortKey;
@@ -591,6 +595,7 @@ function BoardBlock(props: {
 }) {
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(PAGE_ROWS);
+  const [legendOpen, setLegendOpen] = useState(false);
   const players = useMemo(() => props.board?.players ?? [], [props.board]);
   const gone = useMemo(
     () =>
@@ -703,6 +708,16 @@ function BoardBlock(props: {
             >
               Undo
             </button>
+            {props.membership ? (
+              <button
+                type="button"
+                className={styles.barBtn}
+                aria-expanded={legendOpen}
+                onClick={() => setLegendOpen((o) => !o)}
+              >
+                Icons
+              </button>
+            ) : null}
             <button type="button" className={styles.barBtn} onClick={props.onEditSetup}>
               Setup
             </button>
@@ -721,6 +736,7 @@ function BoardBlock(props: {
             setLimit(PAGE_ROWS);
           }}
         />
+        {legendOpen ? <ListIconLegend membership={props.membership} /> : null}
       </div>
 
       {props.loading && !props.board ? <LoadingBlock /> : null}
@@ -789,6 +805,7 @@ function BoardBlock(props: {
                               <span className={styles.cov}>{n == null ? "n/a" : `${n}/3`}</span>
                             ) : null}
                           </span>
+                          <ListIconRow playerId={row.player.player_id} membership={props.membership} />
                         </td>
                         <td className={styles.tdScore}>{fmtScore(scores[props.sortKey])}</td>
                         <td className={styles.tdAct}>
@@ -842,6 +859,7 @@ function BoardBlock(props: {
               mode={props.suggestMode}
               suggestions={suggestions.slice(0, 6)}
               reasons={reasons}
+              membership={props.membership}
               onMine={props.onMine}
             />
           </aside>
@@ -923,6 +941,7 @@ function SuggestPanel(props: {
   mode: SuggestMode;
   suggestions: ReturnType<typeof rankSuggestions<{ player: DraftBoardPlayer; player_id: string; scores: ScoreVector }>>;
   reasons?: Map<string, string | null>;
+  membership?: ListMembership | null;
   onMine: (p: DraftBoardPlayer) => void;
 }) {
   return (
@@ -945,6 +964,7 @@ function SuggestPanel(props: {
                 {props.reasons?.get(row.player.player_id) ? (
                   <span className={styles.suggestReason}>{props.reasons.get(row.player.player_id)}</span>
                 ) : null}
+                <ListIconRow playerId={row.player.player_id} membership={props.membership} />
               </span>
               <button
                 type="button"

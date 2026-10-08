@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { DraftAssistant, DRAFT_SETUP_EVENT, DRAFT_SETUP_KEY } from "@/components/draft/DraftAssistant";
 import { TeamBoard } from "@/components/TeamBoard";
 import { TeamRollupPanel } from "@/components/team/TeamRollupPanel";
+import type { ListMembership } from "@/lib/draftListMembership";
 import { validateSetup, type DraftSetup } from "@/lib/draftMath";
 import {
   readTeamRoster,
@@ -34,7 +35,7 @@ function readSetup(): DraftSetup | null {
   }
 }
 
-export function DraftTeamScreen() {
+export function DraftTeamScreen(props: { membership?: ListMembership | null }) {
   const [hydrated, setHydrated] = useState(false);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [setup, setSetup] = useState<DraftSetup | null>(null);
@@ -76,7 +77,7 @@ export function DraftTeamScreen() {
   );
   const draft = (
     <div className={styles.draft} id="draft">
-      <DraftAssistant />
+      <DraftAssistant membership={props.membership ?? null} />
     </div>
   );
 
