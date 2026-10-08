@@ -102,6 +102,33 @@ type Props = {
   directory: { player_id: string; full_name: string }[];
 };
 
+/**
+ * Comeback (Analyst): the row's own `stats` are his last healthy season, so the 9-stat line reads
+ * them, not the 2025-26 averages lookup (he may have no 2025-26 line at all).
+ */
+const OWN_STATS_LISTS = new Set(["comeback"]);
+
+function ownStatLine(stats: InsightRow["stats"]): StatLineValues {
+  const n = (k: string) => (typeof stats[k] === "number" ? (stats[k] as number) : null);
+  return {
+    pts: n("avg_pts"),
+    reb: n("avg_reb"),
+    ast: n("avg_ast"),
+    stl: n("avg_stl"),
+    blk: n("avg_blk"),
+    fg3m: n("avg_fg3m"),
+    fg_pct: n("fg_pct"),
+    ft_pct: n("ft_pct"),
+    tov: n("avg_tov"),
+  };
+}
+
+/** "overall in 2024-25" → "2024-25" for the value tag. */
+function seasonTag(label: string): string | null {
+  const m = label.match(/\b(\d{4}-\d{2})\b/);
+  return m ? m[1] : null;
+}
+
 function Row({
   row,
   listId,
@@ -114,13 +141,18 @@ function Row({
   avgs: Record<string, StatLineValues>;
 }) {
   const missed = listId === "availability" ? row.stats.games_missed_3yr : undefined;
+  const own = OWN_STATS_LISTS.has(listId);
+  const tag = own ? seasonTag(row.value_label) : null;
   return (
     <li className={styles.row}>
       <span className={styles.rank}>{fmtNum(row.rank)}</span>
       <div className={styles.body}>
         <div className={styles.line}>
           <span className={styles.name}>{formatShortName(row.full_name)}</span>
-          <span className={styles.value}>{fmtValue(row.value, kind)}</span>
+          <span className={styles.value} title={own ? row.value_label : undefined}>
+            {fmtValue(row.value, kind)}
+            {tag ? <span className={styles.valueTag}> · {tag}</span> : null}
+          </span>
         </div>
         {row.reason || missed !== undefined ? (
           <p className={styles.reason}>
@@ -128,7 +160,7 @@ function Row({
             {!row.reason && missed !== undefined ? `missed ${fmtNum(missed)} games` : null}
           </p>
         ) : null}
-        <StatLine values={avgs[row.player_id] ?? null} />
+        <StatLine values={own ? ownStatLine(row.stats) : (avgs[row.player_id] ?? null)} />
       </div>
     </li>
   );

@@ -335,3 +335,9 @@
   color: var(--fh-champagne-text);
   font-variant-numeric: tabular-nums;
 }
+
+.valueTag {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #9a8a76;
+}
