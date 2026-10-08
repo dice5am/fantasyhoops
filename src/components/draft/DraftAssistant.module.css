@@ -714,3 +714,31 @@
     width: 100%;
   }
 }
+
+/* Pick card: OFF/DEF/EFF/O1 (2025-26) + quiet hot/cold underneath. */
+.liveList li.pickCard {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0.35rem 0;
+}
+
+.pickMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.pickScores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--fh-champagne-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.pickHot {
+  font-size: 0.68rem;
+  color: var(--fh-text-dim);
+  font-variant-numeric: tabular-nums;
+}

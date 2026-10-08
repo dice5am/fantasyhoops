@@ -12,6 +12,8 @@ export type RosterPlayer = {
 
 const KEY = "fantasyhoops.teamRoster";
 const MAX = 15;
+/** Same-tab change signal (storage key + shape unchanged). */
+export const TEAM_ROSTER_EVENT = "fantasyhoops:teamRoster";
 
 export function readTeamRoster(): RosterPlayer[] {
   if (typeof window === "undefined") return [];
@@ -47,6 +49,11 @@ export function writeTeamRoster(players: RosterPlayer[]): RosterPlayer[] {
     window.localStorage.setItem(KEY, JSON.stringify(next));
   } catch {
     /* ignore quota */
+  }
+  try {
+    window.dispatchEvent(new Event(TEAM_ROSTER_EVENT));
+  } catch {
+    /* ignore */
   }
   return next;
 }

@@ -1,7 +1,8 @@
-import { DraftAssistant } from "@/components/draft/DraftAssistant";
+import { DraftTeamScreen } from "@/components/DraftTeamScreen";
 
 export const dynamic = "force-dynamic";
 
-export default function DraftPage() {
-  return <DraftAssistant />;
+/** Draft + Team merged screen (same component on /draft and /team). */
+export default function Page() {
+  return <DraftTeamScreen />;
 }

@@ -17,6 +17,7 @@ import {
   readTeamRoster,
   writeTeamRoster,
   rosterHasPlayer,
+  TEAM_ROSTER_EVENT,
   type RosterPlayer,
 } from "@/lib/teamRoster";
 import {
@@ -147,7 +148,16 @@ export function TeamBoard() {
   useEffect(() => {
     setRoster(readTeamRoster());
     setHydrated(true);
+    // Draft (same screen) writes the shared roster key — re-read on change.
+    const onRoster = () => {
+      const next = readTeamRoster();
+      setRoster((prev) =>
+        JSON.stringify(prev) === JSON.stringify(next) ? prev : next
+      );
+    };
+    window.addEventListener(TEAM_ROSTER_EVENT, onRoster);
     return () => {
+      window.removeEventListener(TEAM_ROSTER_EVENT, onRoster);
       if (toastTimer.current) window.clearTimeout(toastTimer.current);
       if (searchTimer.current) window.clearTimeout(searchTimer.current);
     };

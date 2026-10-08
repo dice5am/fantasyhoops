@@ -1,0 +1,146 @@
+.panel {
+  margin: 0 0 1rem;
+  box-sizing: border-box;
+  padding: 0.9rem 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--fh-border);
+  background: rgba(18, 18, 20, 0.72);
+  box-shadow: var(--fh-edge-top), var(--fh-edge-left);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fh-text-dim);
+  font-weight: 650;
+}
+
+.h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--fh-champagne-text);
+}
+
+.meta {
+  font-size: 0.78rem;
+  color: var(--fh-text-muted);
+}
+
+.aggRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.agg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--fh-border);
+  background: rgba(247, 231, 206, 0.04);
+}
+
+.aggLabel {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--fh-text-dim);
+  font-weight: 650;
+}
+
+.aggVal {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--fh-champagne-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.hotQuiet {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: var(--fh-text-dim);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #f0b4a0;
+}
+
+.nine {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  table-layout: fixed;
+}
+
+.nine th,
+.nine td {
+  padding: 0.3rem 0.25rem;
+  text-align: right;
+  border-top: 1px solid rgba(247, 231, 206, 0.08);
+  color: var(--fh-champagne-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nine thead th {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--fh-text-dim);
+  font-weight: 650;
+  border-top: 0;
+}
+
+.nine th[scope="row"],
+.nine thead th:first-child {
+  text-align: left;
+  color: var(--fh-text-muted);
+  font-weight: 600;
+}
+
+.hotHead,
+.hotCell {
+  color: var(--fh-text-dim) !important;
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.hotN {
+  opacity: 0.7;
+}
+
+.foot {
+  margin: 0.6rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--fh-text-dim);
+}
+
+@media (max-width: 420px) {
+  .panel {
+    padding: 0.75rem 0.7rem 0.85rem;
+  }
+  .nine th,
+  .nine td {
+    padding: 0.28rem 0.15rem;
+  }
+}

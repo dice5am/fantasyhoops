@@ -1,12 +1,8 @@
-import { Suspense } from "react";
-import { TeamBoard } from "@/components/TeamBoard";
+import { DraftTeamScreen } from "@/components/DraftTeamScreen";
 
 export const dynamic = "force-dynamic";
 
-export default function TeamPage() {
-  return (
-    <Suspense fallback={<main style={{ padding: "2rem" }}>Loading team…</main>}>
-      <TeamBoard />
-    </Suspense>
-  );
+/** Draft + Team merged screen (same component on /draft and /team). */
+export default function Page() {
+  return <DraftTeamScreen />;
 }

@@ -29,11 +29,17 @@ import {
   rosterHasPlayer,
   upsertTeamRosterPlayer,
   type RosterPlayer,
+  TEAM_ROSTER_EVENT,
   TEAM_ROSTER_MAX,
 } from "@/lib/teamRoster";
+import { fmtHotPct } from "@/lib/teamRollup";
+import { useHotCold } from "@/lib/useHotCold";
 import styles from "./DraftAssistant.module.css";
 
 const SETUP_KEY = "fantasyhoops.draftSetup";
+export const DRAFT_SETUP_KEY = SETUP_KEY;
+/** Same-tab signal so the merged Draft/Team screen can re-read setup. */
+export const DRAFT_SETUP_EVENT = "fantasyhoops:draftSetup";
 
 type Phase = "empty" | "setup" | "board";
 type ScoreWindow = "last" | "three_yr";
@@ -60,6 +66,7 @@ function readSetup(): DraftSetup | null {
 
 function writeSetup(setup: DraftSetup) {
   window.localStorage.setItem(SETUP_KEY, JSON.stringify(setup));
+  window.dispatchEvent(new Event(DRAFT_SETUP_EVENT));
 }
 
 function fmtScore(v: number | null | undefined): string {
@@ -138,6 +145,10 @@ export function DraftAssistant() {
       setPhase("empty");
     }
     setHydrated(true);
+    // Team (same screen) can remove/add — re-read the shared roster key.
+    const onRoster = () => setRoster(readTeamRoster());
+    window.addEventListener(TEAM_ROSTER_EVENT, onRoster);
+    return () => window.removeEventListener(TEAM_ROSTER_EVENT, onRoster);
   }, []);
 
   const loadBoard = useCallback(async () => {
@@ -800,6 +811,7 @@ function LivePanel(props: {
 }) {
   const byId = new Map(props.players.map((p) => [p.player_id, p]));
   const shown = props.gaps.filter((g) => g.gap != null).slice(0, 3);
+  const { data: hotCold } = useHotCold();
   return (
     <div className={styles.card}>
       <div className={styles.cardHead}>
@@ -820,11 +832,26 @@ function LivePanel(props: {
         <ul className={styles.liveList}>
           {props.roster.map((r) => {
             const player = byId.get(r.player_id);
-            const score = player ? vectorOf(player, props.windowMode).o1 : null;
+            // Pick card: OFF/DEF/EFF + last season's overall (score_o1, 2025-26 Last).
+            const last = player ? player.scores : null;
+            const hot = hotCold?.hot_cold.players[r.player_id];
             return (
-              <li key={r.player_id}>
-                <span>{formatShortName(r.full_name)}</span>
-                <span className={styles.liveScore}>{fmtScore(score)}</span>
+              <li key={r.player_id} className={styles.pickCard}>
+                <span className={styles.pickMain}>
+                  <span>{formatShortName(r.full_name)}</span>
+                  <span className={styles.pickScores}>
+                    <span>OFF {fmtScore(last?.off)}</span>
+                    <span>DEF {fmtScore(last?.def)}</span>
+                    <span>EFF {fmtScore(last?.eff)}</span>
+                    <span>O1 {fmtScore(last?.o1)}</span>
+                  </span>
+                  <span
+                    className={styles.pickHot}
+                    title="Hot/cold: 2025-26 vs own 2023-24–2025-26 average, 9 stats, TOV down = hot. Blank under 20 GP / 200 min or fewer than 6 of 9."
+                  >
+                    hot/cold {hotCold ? fmtHotPct(hot?.hot_read) : "…"}
+                  </span>
+                </span>
                 <button
                   type="button"
                   className={styles.remove}
