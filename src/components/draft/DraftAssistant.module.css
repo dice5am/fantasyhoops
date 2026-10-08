@@ -1082,3 +1082,14 @@
     overflow-x: hidden;
   }
 }
+
+/* Draft v3: Suggested reason line — one muted line, never wraps. */
+.suggestReason {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--fh-text-muted);
+}

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StatLine } from "@/components/StatLine";
+import { reasonLine, teamMeans, weakCats } from "@/lib/draftReasons";
+import { baselinesFor } from "@/lib/teamRollup";
 import { TeamMarkPip } from "@/components/TeamMarkPip";
 import { formatShortName } from "@/lib/formatName";
 import { nameMatches } from "@/lib/normalize";
@@ -647,6 +649,24 @@ function BoardBlock(props: {
     return rankSuggestions(candidates, props.suggestMode, gaps);
   }, [players, gone, props.windowMode, props.suggestMode, gaps]);
 
+  // Draft v3: one-line reason per suggestion from You vs Avg (Last scores, same as the team strip).
+  const { data: hotColdBase } = useHotCold();
+  const weak = useMemo(() => {
+    const byId = new Map(players.map((p) => [p.player_id, p]));
+    const rosterLast = props.roster
+      .map((r) => byId.get(r.player_id)?.scores)
+      .filter((v): v is DraftBoardPlayer["scores"] => Boolean(v));
+    const avg = baselinesFor(hotColdBase?.baselines.teams, props.setup.n, props.setup.s).league?.scores;
+    return weakCats(teamMeans(rosterLast), avg ?? null);
+  }, [players, props.roster, hotColdBase, props.setup]);
+  const reasons = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const row of suggestions.slice(0, 6)) {
+      m.set(row.player.player_id, reasonLine(row.player.scores, weak, props.roster.length > 0));
+    }
+    return m;
+  }, [suggestions, weak, props.roster.length]);
+
   // Pick clock: overall pick now, and how many picks until yours (DRAFT-RULES §1).
   const picksMade = props.roster.length + props.taken.length;
   const current = picksMade + 1;
@@ -821,6 +841,7 @@ function BoardBlock(props: {
             <SuggestPanel
               mode={props.suggestMode}
               suggestions={suggestions.slice(0, 6)}
+              reasons={reasons}
               onMine={props.onMine}
             />
           </aside>
@@ -901,6 +922,7 @@ function LivePanel(props: {
 function SuggestPanel(props: {
   mode: SuggestMode;
   suggestions: ReturnType<typeof rankSuggestions<{ player: DraftBoardPlayer; player_id: string; scores: ScoreVector }>>;
+  reasons?: Map<string, string | null>;
   onMine: (p: DraftBoardPlayer) => void;
 }) {
   return (
@@ -920,6 +942,9 @@ function SuggestPanel(props: {
                 <span className={styles.suggestSub}>
                   {row.focusLabel ?? "—"} · O1 {fmtScore(row.o1)}
                 </span>
+                {props.reasons?.get(row.player.player_id) ? (
+                  <span className={styles.suggestReason}>{props.reasons.get(row.player.player_id)}</span>
+                ) : null}
               </span>
               <button
                 type="button"
