@@ -1,3 +1,4 @@
+import type { Band } from "@/lib/draftBands";
 import styles from "./StatLine.module.css";
 
 /**
@@ -34,7 +35,23 @@ function fmt(v: number | null | undefined, pct?: boolean): string {
   return (pct ? v * 100 : v).toFixed(1);
 }
 
-export function StatLine({ values }: { values: StatLineValues | null | undefined }) {
+export type StatLineBands = Partial<Record<keyof StatLineValues, Band | null>>;
+
+const BAND_CLASS: Record<Band, string> = {
+  elite: styles.elite,
+  good: styles.good,
+  avg: styles.avg,
+  poor: styles.poor,
+};
+
+export function StatLine({
+  values,
+  bands,
+}: {
+  values: StatLineValues | null | undefined;
+  /** Draft v3 shading (brightness/weight only). Omit for the plain line. */
+  bands?: StatLineBands | null;
+}) {
   return (
     <dl className={styles.line} aria-label="Per-game averages">
       {CELLS.map((c) => {
@@ -42,7 +59,17 @@ export function StatLine({ values }: { values: StatLineValues | null | undefined
         return (
           <div key={c.key} className={styles.cell}>
             <dt>{c.label}</dt>
-            <dd className={text === "n/a" ? styles.na : undefined}>{text}</dd>
+            <dd
+              className={
+                text === "n/a"
+                  ? styles.na
+                  : bands?.[c.key]
+                    ? BAND_CLASS[bands[c.key] as Band]
+                    : undefined
+              }
+            >
+              {text}
+            </dd>
           </div>
         );
       })}

@@ -52,3 +52,25 @@ export function bandOf(v: number | null | undefined, cuts: Cuts | undefined): Ba
   if (v >= cuts.p30) return "avg";
   return "poor";
 }
+
+/** StatLine (per-game averages) key → the cat score that bands it. */
+export const STATLINE_SCORE_KEY = {
+  pts: "pts",
+  reb: "reb",
+  ast: "ast",
+  stl: "stl",
+  blk: "blk",
+  fg3m: "fg3m",
+  fg_pct: "fg_f1",
+  ft_pct: "ft_f1",
+  tov: "tov",
+} as const satisfies Record<string, NineScoreKey>;
+
+export function statLineBands(scores: CatScores | null | undefined, cuts: BandCuts) {
+  const out: Partial<Record<keyof typeof STATLINE_SCORE_KEY, Band | null>> = {};
+  if (!scores) return out;
+  for (const [line, key] of Object.entries(STATLINE_SCORE_KEY) as [keyof typeof STATLINE_SCORE_KEY, NineScoreKey][]) {
+    out[line] = bandOf(scores[key], cuts[key]);
+  }
+  return out;
+}

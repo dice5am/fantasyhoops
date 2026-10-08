@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { StatLine } from "@/components/StatLine";
 import { ListIconLegend, ListIconRow } from "@/components/draft/ListIcons";
 import type { ListMembership } from "@/lib/draftListMembership";
-import { bandCuts, topPoolIds } from "@/lib/draftBands";
+import { BAND_CATS, bandCuts, bandOf, statLineBands, topPoolIds, type BandCuts } from "@/lib/draftBands";
+import type { NineScoreKey } from "@/types/hot_cold";
 import { reasonLine, teamMeans, weakCats } from "@/lib/draftReasons";
 import { baselinesFor } from "@/lib/teamRollup";
 import { TeamMarkPip } from "@/components/TeamMarkPip";
@@ -671,6 +672,11 @@ function BoardBlock(props: {
     const ids = topPoolIds(players, (p) => p.player_id, (p) => p.scores.o1);
     return bandCuts(ids.map((id) => byId.get(id)!.scores));
   }, [players]);
+  // Shading on the selected view (Analyst): top 200 by overall in that view.
+  const viewCuts = useMemo(() => {
+    const ids = new Set(topPoolIds(players, (p) => p.player_id, (p) => vectorOf(p, props.windowMode).o1));
+    return bandCuts(players.filter((p) => ids.has(p.player_id)).map((p) => vectorOf(p, props.windowMode)));
+  }, [players, props.windowMode]);
   const reasons = useMemo(() => {
     const m = new Map<string, string | null>();
     for (const row of suggestions.slice(0, 6)) {
@@ -744,6 +750,7 @@ function BoardBlock(props: {
           }}
         />
         {legendOpen ? <ListIconLegend membership={props.membership} /> : null}
+        {legendOpen ? <ShadeLegend /> : null}
       </div>
 
       {props.loading && !props.board ? <LoadingBlock /> : null}
@@ -801,7 +808,8 @@ function BoardBlock(props: {
                     const n = row.player.three_yr?.n_seasons_used;
                     const color = getTeamColors(row.player.team_abbreviation)?.chartPrimary;
                     return (
-                      <tr key={row.player.player_id}>
+                      <Fragment key={row.player.player_id}>
+                      <tr className={styles.rowMain}>
                         <td className={styles.tdName}>
                           <span className={styles.nameCell}>
                             <TeamMarkPip color={color} size={7} />
@@ -836,11 +844,17 @@ function BoardBlock(props: {
                           </span>
                         </td>
                         {SORT_CHIPS.filter((c) => c.key !== props.sortKey).map((chip) => (
-                          <td key={chip.key} className={styles.tdMore}>
+                          <td key={chip.key} className={`${styles.tdMore} ${shadeClass(scores[chip.key], chip.key, viewCuts)}`}>
                             {fmtScore(scores[chip.key])}
                           </td>
                         ))}
                       </tr>
+                      <tr className={styles.rowStats}>
+                        <td colSpan={3} className={styles.tdStats}>
+                          <StatLine values={row.player.avgs} bands={statLineBands(row.player.scores, lastCuts)} />
+                        </td>
+                      </tr>
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -861,7 +875,7 @@ function BoardBlock(props: {
           </div>
 
           <aside className={styles.rail}>
-            <LivePanel roster={props.roster} players={players} onRemove={props.onRemove} />
+            <LivePanel roster={props.roster} players={players} cuts={lastCuts} membership={props.membership} onRemove={props.onRemove} />
             <SuggestPanel
               mode={props.suggestMode}
               suggestions={suggestions.slice(0, 6)}
@@ -876,9 +890,33 @@ function BoardBlock(props: {
   );
 }
 
+const BAND_KEYS = new Set<string>(BAND_CATS);
+const SHADE_CLASS = { elite: styles.shElite, good: styles.shGood, avg: styles.shAvg, poor: styles.shPoor };
+
+/** Desktop score columns: shade the 9 cat scores on the selected view; OFF/DEF/EFF/O1 stay plain. */
+function shadeClass(v: number | null | undefined, key: string, cuts: BandCuts): string {
+  if (!BAND_KEYS.has(key)) return "";
+  const b = bandOf(v, cuts[key as NineScoreKey]);
+  return b ? SHADE_CLASS[b] : "";
+}
+
+function ShadeLegend() {
+  return (
+    <p className={styles.shadeLegend} aria-label="Stat shading">
+      <span className={styles.shElite}>Elite</span>
+      <span className={styles.shGood}>Good</span>
+      <span className={styles.shAvg}>Average</span>
+      <span className={styles.shPoor}>Poor</span>
+      <span className={styles.shadeNote}>vs top 200</span>
+    </p>
+  );
+}
+
 function LivePanel(props: {
   roster: RosterPlayer[];
   players: DraftBoardPlayer[];
+  cuts: BandCuts;
+  membership?: ListMembership | null;
   onRemove: (id: string) => void;
 }) {
   const byId = new Map(props.players.map((p) => [p.player_id, p]));
@@ -904,6 +942,7 @@ function LivePanel(props: {
               <li key={r.player_id} className={styles.pickCard}>
                 <div className={styles.pickTop}>
                   <span className={styles.pickName}>{formatShortName(r.full_name)}</span>
+                  <ListIconRow playerId={r.player_id} membership={props.membership} skip={["hot", "cold"]} />
                   <button
                     type="button"
                     className={styles.quietRemove}
@@ -928,7 +967,7 @@ function LivePanel(props: {
                     </div>
                   ))}
                 </dl>
-                <StatLine values={player?.avgs ?? null} />
+                <StatLine values={player?.avgs ?? null} bands={statLineBands(player?.scores, props.cuts)} />
                 <p
                   className={styles.pickHot}
                   title="2025-26 vs his own 3-year average, 9 stats, fewer turnovers = hot. Blank under 20 GP / 200 min or fewer than 6 of 9."

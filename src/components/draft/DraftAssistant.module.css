@@ -1156,3 +1156,65 @@
   gap: 0.4rem;
   min-width: 0;
 }
+
+/* Draft v3 stat shading (Design §4). Phone: a 9-stat line under each row (2025-26 averages,
+   banded on Last). Wider: the stat line is hidden and the 9 cat score columns are shaded. */
+.board tr.rowMain td {
+  border-bottom: 0;
+}
+.board td.tdStats {
+  text-align: left;
+  padding: 0 0.5rem 0.4rem 0.75rem;
+  white-space: normal;
+}
+.tdStats > dl {
+  max-width: 26rem;
+}
+@media (min-width: 641px) {
+  .board tr.rowStats {
+    display: none;
+  }
+  .board tr.rowMain td {
+    border-bottom: 1px solid rgba(247, 231, 206, 0.08);
+  }
+}
+.board td.shElite,
+.shadeLegend .shElite {
+  color: #fffcf5;
+  font-weight: 700;
+}
+.board td.shElite {
+  background: rgba(247, 231, 206, 0.08);
+}
+.shadeLegend .shElite {
+  background: rgba(247, 231, 206, 0.16);
+  border-radius: 5px;
+  padding: 0 0.3rem;
+}
+.board td.shGood,
+.shadeLegend .shGood {
+  color: #f7e7ce;
+  font-weight: 600;
+}
+.board td.shAvg,
+.shadeLegend .shAvg {
+  color: #bfb09b;
+}
+.board td.shPoor,
+.shadeLegend .shPoor {
+  color: #6e6457;
+}
+.shadeLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+}
+.shadeNote {
+  color: #9a8a76;
+}
+.pickTop > .iconRow {
+  margin: 0 auto 0 0;
+}
