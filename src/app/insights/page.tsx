@@ -1,67 +1,24 @@
-import { InsightsBoard } from "@/components/InsightsBoard";
-import { getLeagueContext } from "@/lib/loadMart";
-import { getFantasyScores } from "@/lib/loadFantasyScores";
-import { parseScope, parseSeason } from "@/lib/scope";
-import { parseTopPct } from "@/lib/top250";
-import { getInsightPosts } from "@/lib/insights";
+import { InsightsLists } from "@/components/insights/InsightsLists";
+import type { StatLineValues } from "@/components/StatLine";
+import { getDraftBoard } from "@/lib/loadDraftBoard";
+import { getInsightLists } from "@/lib/loadInsightLists";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{
-  scope?: string;
-  season?: string;
-  topPct?: string;
-  universe?: string;
-  segment?: string;
-}>;
-
-export default async function InsightsPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const sp = await searchParams;
-  const season = parseSeason(sp.season);
-  const scope = parseScope(sp.scope);
-  const topPct =
-    sp.topPct != null && sp.topPct !== ""
-      ? parseTopPct(sp.topPct)
-      : sp.universe != null && sp.universe !== ""
-        ? 100
-        : parseTopPct(undefined);
-
-  const [context, fantasy] = await Promise.all([
-    getLeagueContext({
-      season,
-      season_type_scope: scope,
-      topPct,
-    }),
-    getFantasyScores({
-      season,
-      season_type_scope: scope,
-      topPct,
-    }).catch(() => null),
-  ]);
-
-  const posts = getInsightPosts().map((p) => ({
-    slug: p.slug,
-    title: p.title,
-    summary: p.summary,
-    date: p.date,
-    author: p.author,
-    tags: p.tags,
-  }));
-
-  return (
-    <InsightsBoard
-      context={context}
-      season={season}
-      scope={scope}
-      topPct={topPct}
-      initialFantasy={fantasy}
-      posts={posts}
-      initialSegment={sp.segment === "briefs" ? "briefs" : "pulse"}
-    />
-  );
+/**
+ * /insights — Analyst lists only (data/insights/insights.json).
+ * Old Pulse/Briefs content lives at /insights/archive (no nav link).
+ * Row 9-stat lines come from the same 2025-26 per-game averages as the Draft pick cards.
+ */
+export default async function InsightsPage() {
+  const data = getInsightLists();
+  const board = await getDraftBoard().catch(() => null);
+  const avgs: Record<string, StatLineValues> = {};
+  const directory: { player_id: string; full_name: string }[] = [];
+  for (const p of board?.players ?? []) {
+    avgs[p.player_id] = p.avgs;
+    directory.push({ player_id: p.player_id, full_name: p.full_name });
+  }
+  return <InsightsLists data={data} avgs={avgs} directory={directory} />;
 }

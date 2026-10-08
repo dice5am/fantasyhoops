@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/insight",
-        destination: "/insights?segment=briefs",
+        destination: "/insights/archive?segment=briefs",
         permanent: false,
       },
       {
