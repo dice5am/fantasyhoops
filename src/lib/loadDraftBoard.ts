@@ -36,12 +36,26 @@ export type DraftThreeYear = {
   scores: DraftWindowScores;
 };
 
+/** 2025-26 reg_only per-game averages straight from the fantasy mart (null stays null). */
+export type DraftAverages = {
+  pts: number | null;
+  reb: number | null;
+  ast: number | null;
+  stl: number | null;
+  blk: number | null;
+  fg3m: number | null;
+  fg_pct: number | null;
+  ft_pct: number | null;
+  tov: number | null;
+};
+
 export type DraftBoardPlayer = {
   player_id: string;
   full_name: string;
   team_abbreviation: string | null;
   gp: number | null;
   scores: DraftWindowScores;
+  avgs: DraftAverages;
   three_yr: DraftThreeYear | null;
 };
 
@@ -194,6 +208,17 @@ export async function getDraftBoard(): Promise<DraftBoardPayload> {
       team_abbreviation: teamMap.get(player_id) ?? null,
       gp: toNullable(raw.gp),
       scores: scoresFrom(raw, ""),
+      avgs: {
+        pts: toNullable(raw.avg_pts),
+        reb: toNullable(raw.avg_reb),
+        ast: toNullable(raw.avg_ast),
+        stl: toNullable(raw.avg_stl),
+        blk: toNullable(raw.avg_blk),
+        fg3m: toNullable(raw.avg_fg3m),
+        fg_pct: toNullable(raw.fg_pct),
+        ft_pct: toNullable(raw.ft_pct),
+        tov: toNullable(raw.avg_tov),
+      },
       three_yr,
     };
   });

@@ -1,21 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { StatLine } from "@/components/StatLine";
 import { TeamMarkPip } from "@/components/TeamMarkPip";
 import { formatShortName } from "@/lib/formatName";
+import { nameMatches } from "@/lib/normalize";
 import { getTeamColors } from "@/lib/teamColors";
 import type { DraftBoardPayload, DraftBoardPlayer } from "@/lib/loadDraftBoard";
 import {
   DEFAULT_ROUNDS,
-  SIMILARITY_K,
   SORT_CHIPS,
   categoryGaps,
   finite,
   rankSuggestions,
   validateSetup,
-  weightCaption,
   yourPicks,
-  type CatGap,
   type DraftFormat,
   type DraftSetup,
   type ScoreVector,
@@ -23,10 +22,19 @@ import {
   type SuggestMode,
 } from "@/lib/draftMath";
 import {
+  readHistory,
+  readPrefs,
+  readTaken,
+  writeHistory,
+  writePrefs,
+  writeTaken,
+  type DraftAction,
+  type TakenPlayer,
+} from "@/lib/draftPicks";
+import {
   clearTeamRoster,
   readTeamRoster,
   removeTeamRosterPlayer,
-  rosterHasPlayer,
   upsertTeamRosterPlayer,
   type RosterPlayer,
   TEAM_ROSTER_EVENT,
@@ -40,6 +48,8 @@ const SETUP_KEY = "fantasyhoops.draftSetup";
 export const DRAFT_SETUP_KEY = SETUP_KEY;
 /** Same-tab signal so the merged Draft/Team screen can re-read setup. */
 export const DRAFT_SETUP_EVENT = "fantasyhoops:draftSetup";
+
+const PAGE_ROWS = 30;
 
 type Phase = "empty" | "setup" | "board";
 type ScoreWindow = "last" | "three_yr";
@@ -74,32 +84,24 @@ function fmtScore(v: number | null | undefined): string {
   return String(Math.round(v));
 }
 
-function fmtGap(v: number): string {
-  const rounded = Math.round(v * 10) / 10;
-  const sign = rounded > 0 ? "+" : "";
-  return `${sign}${rounded.toFixed(1)}`;
-}
+const EMPTY_VECTOR: ScoreVector = {
+  pts: null,
+  ast: null,
+  fg3m: null,
+  reb: null,
+  stl: null,
+  blk: null,
+  tov: null,
+  fg_f1: null,
+  ft_f1: null,
+  off: null,
+  def: null,
+  eff: null,
+  o1: null,
+};
 
 function vectorOf(player: DraftBoardPlayer, window: ScoreWindow): ScoreVector {
-  if (window === "three_yr") {
-    return (
-      player.three_yr?.scores ?? {
-        pts: null,
-        ast: null,
-        fg3m: null,
-        reb: null,
-        stl: null,
-        blk: null,
-        tov: null,
-        fg_f1: null,
-        ft_f1: null,
-        off: null,
-        def: null,
-        eff: null,
-        o1: null,
-      }
-    );
-  }
+  if (window === "three_yr") return player.three_yr?.scores ?? EMPTY_VECTOR;
   return player.scores;
 }
 
@@ -119,9 +121,11 @@ export function DraftAssistant() {
   const [setupError, setSetupError] = useState<string | null>(null);
 
   const [windowMode, setWindowMode] = useState<ScoreWindow>("last");
-  const [sortKey, setSortKey] = useState<SortKey>("o1");
   const [suggestMode, setSuggestMode] = useState<SuggestMode>("cover");
+  const [sortKey, setSortKey] = useState<SortKey>("o1");
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
+  const [taken, setTaken] = useState<TakenPlayer[]>([]);
+  const [history, setHistory] = useState<DraftAction[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [toastError, setToastError] = useState<string | null>(null);
 
@@ -132,8 +136,12 @@ export function DraftAssistant() {
 
   useEffect(() => {
     const saved = readSetup();
-    const storedRoster = readTeamRoster();
-    setRoster(storedRoster);
+    setRoster(readTeamRoster());
+    setTaken(readTaken());
+    setHistory(readHistory());
+    const prefs = readPrefs();
+    setWindowMode(prefs.windowMode);
+    setSuggestMode(prefs.suggestMode);
     if (saved) {
       setSetup(saved);
       setNRaw(String(saved.n));
@@ -157,9 +165,7 @@ export function DraftAssistant() {
     try {
       const res = await fetch("/api/draft-board", { cache: "no-store" });
       const body = (await res.json()) as DraftBoardPayload & { error?: string };
-      if (!res.ok) {
-        throw new Error(body.error || "Couldn't load draft board");
-      }
+      if (!res.ok) throw new Error(body.error || "Couldn't load draft board");
       if (!body.players || body.last_season !== "2025-26") {
         throw new Error("Draft board did not return the 2025-26 Last baseline");
       }
@@ -182,7 +188,7 @@ export function DraftAssistant() {
     const t = window.setTimeout(() => {
       setToast(null);
       setToastError(null);
-    }, 3200);
+    }, 2400);
     return () => window.clearTimeout(t);
   }, [toast, toastError]);
 
@@ -195,6 +201,16 @@ export function DraftAssistant() {
     if (error) return { error, picks: null };
     return { error: null, picks: yourPicks({ n, s, format, r }) };
   }, [nRaw, sRaw, rRaw, format]);
+
+  function changeWindow(w: ScoreWindow) {
+    setWindowMode(w);
+    writePrefs({ windowMode: w, suggestMode });
+  }
+
+  function changeMode(m: SuggestMode) {
+    setSuggestMode(m);
+    writePrefs({ windowMode, suggestMode: m });
+  }
 
   function continueToBoard() {
     const n = parseIntStrict(nRaw);
@@ -216,7 +232,11 @@ export function DraftAssistant() {
     setPhase("board");
   }
 
-  function onPick(player: DraftBoardPlayer) {
+  function pushHistory(a: DraftAction) {
+    setHistory(writeHistory([...readHistory(), a]));
+  }
+
+  function onMine(player: DraftBoardPlayer) {
     const result = upsertTeamRosterPlayer({
       player_id: player.player_id,
       full_name: player.full_name,
@@ -225,33 +245,64 @@ export function DraftAssistant() {
     setRoster(result.roster);
     if (!result.ok) {
       setToast(null);
-      setToastError(
-        `Roster is full (${TEAM_ROSTER_MAX}). Remove someone before adding — nothing was dropped.`
-      );
+      setToastError(`Roster is full (${TEAM_ROSTER_MAX}). Remove someone first. Nothing was dropped.`);
       return;
     }
+    if (result.added) pushHistory({ t: "mine", player_id: player.player_id });
     setToastError(null);
-    setToast(
-      result.added
-        ? "Saved to Team roster"
-        : "Already on Team roster"
-    );
+    setToast(`${formatShortName(player.full_name)} · mine`);
+  }
+
+  function onTaken(player: DraftBoardPlayer) {
+    const current = readTaken();
+    if (!current.some((p) => p.player_id === player.player_id)) {
+      setTaken(writeTaken([...current, { player_id: player.player_id, full_name: player.full_name }]));
+      pushHistory({ t: "taken", player_id: player.player_id });
+    }
+    setToastError(null);
+    setToast(`${formatShortName(player.full_name)} · taken`);
+  }
+
+  function onUndo() {
+    const hist = readHistory();
+    while (hist.length > 0) {
+      const last = hist.pop()!;
+      if (last.t === "mine") {
+        const r = readTeamRoster();
+        if (!r.some((p) => p.player_id === last.player_id)) continue;
+        setRoster(removeTeamRosterPlayer(last.player_id));
+        const name = r.find((p) => p.player_id === last.player_id)?.full_name ?? "";
+        setToast(`Undid mine · ${formatShortName(name)}`);
+      } else {
+        const t = readTaken();
+        const hit = t.find((p) => p.player_id === last.player_id);
+        if (!hit) continue;
+        setTaken(writeTaken(t.filter((p) => p.player_id !== last.player_id)));
+        setToast(`Undid taken · ${formatShortName(hit.full_name)}`);
+      }
+      setHistory(writeHistory(hist));
+      setToastError(null);
+      return;
+    }
+    setHistory(writeHistory([]));
+    setToast("Nothing to undo");
   }
 
   function onRemove(player_id: string) {
     setRoster(removeTeamRosterPlayer(player_id));
-    setToast("Removed from Team roster");
+    setToast("Removed");
     setToastError(null);
   }
 
-  function onClear() {
+  function onResetDraft() {
     if (typeof window !== "undefined") {
-      const ok = window.confirm("Clear the Team roster on this device?");
+      const ok = window.confirm("Reset the draft? This clears your roster and taken picks on this device.");
       if (!ok) return;
     }
     setRoster(clearTeamRoster());
-    setToast("Team roster cleared");
-    setToastError(null);
+    setTaken(writeTaken([]));
+    setHistory(writeHistory([]));
+    setToast("Draft reset");
   }
 
   if (!hydrated) {
@@ -264,9 +315,7 @@ export function DraftAssistant() {
 
   return (
     <main className={styles.page}>
-      {phase === "empty" ? (
-        <EmptyBlock onOpen={() => setPhase("setup")} />
-      ) : null}
+      {phase === "empty" ? <EmptyBlock onOpen={() => setPhase("setup")} /> : null}
 
       {phase === "setup" ? (
         <SetupBlock
@@ -281,6 +330,13 @@ export function DraftAssistant() {
           onR={setRRaw}
           onFormat={setFormat}
           onContinue={continueToBoard}
+          windowMode={windowMode}
+          suggestMode={suggestMode}
+          onWindow={changeWindow}
+          onMode={changeMode}
+          board={board}
+          onReset={onResetDraft}
+          hasPicks={roster.length + taken.length > 0}
         />
       ) : null}
 
@@ -291,15 +347,16 @@ export function DraftAssistant() {
           sortKey={sortKey}
           suggestMode={suggestMode}
           roster={roster}
+          taken={taken}
+          canUndo={history.length > 0}
           board={board}
           loading={loading}
           loadError={loadError}
-          onWindow={setWindowMode}
           onSort={setSortKey}
-          onMode={setSuggestMode}
-          onPick={onPick}
+          onMine={onMine}
+          onTaken={onTaken}
+          onUndo={onUndo}
           onRemove={onRemove}
-          onClear={onClear}
           onRetry={() => setReloadKey((k) => k + 1)}
           onEditSetup={() => setPhase("setup")}
         />
@@ -355,21 +412,24 @@ function SetupBlock(props: {
   onR: (v: string) => void;
   onFormat: (v: DraftFormat) => void;
   onContinue: () => void;
+  windowMode: ScoreWindow;
+  suggestMode: SuggestMode;
+  onWindow: (w: ScoreWindow) => void;
+  onMode: (m: SuggestMode) => void;
+  board: DraftBoardPayload | null;
+  onReset: () => void;
+  hasPicks: boolean;
 }) {
   return (
     <section aria-labelledby="draft-setup-title">
-      <p className={styles.kicker}>Draft assistant</p>
       <h1 className={styles.h1} id="draft-setup-title">
-        Setup your draft
+        Draft setup
       </h1>
       <div className={styles.setupGrid}>
         <div className={styles.card}>
-          <h2 className={styles.cardTitle}>League settings</h2>
-          <p className={styles.cardHint}>
-            N teams · slot S · straight or snake · rounds default {DEFAULT_ROUNDS}
-          </p>
+          <h2 className={styles.cardTitle}>League</h2>
           <label className={styles.field}>
-            <span>Number of teams (N)</span>
+            <span>Teams</span>
             <input
               inputMode="numeric"
               value={props.nRaw}
@@ -378,7 +438,7 @@ function SetupBlock(props: {
             />
           </label>
           <label className={styles.field}>
-            <span>Your draft slot (S)</span>
+            <span>Your slot</span>
             <input
               inputMode="numeric"
               value={props.sRaw}
@@ -387,7 +447,7 @@ function SetupBlock(props: {
             />
           </label>
           <label className={styles.field}>
-            <span>Rounds (R)</span>
+            <span>Rounds</span>
             <input
               inputMode="numeric"
               value={props.rRaw}
@@ -422,27 +482,74 @@ function SetupBlock(props: {
             </p>
           ) : null}
         </div>
-        <aside className={styles.card} aria-label="Draft order">
-          <h2 className={styles.cardTitle}>Your pick preview</h2>
-          <p className={styles.cardHint}>
-            {props.picks
-              ? `${props.format === "snake" ? "Snake" : "Straight"} · N=${props.nRaw} · S=${props.sRaw} · ${props.picks.length} rounds`
-              : "Enter a valid N, S, and R. Slot outside 1…N is rejected."}
-          </p>
-          <ol className={styles.order}>
-            {(props.picks ?? []).map((pick) => (
-              <li key={pick.round}>
-                <span className={styles.round}>R{pick.round}</span>
-                <span className={styles.overall}>#{pick.overall}</span>
-                <span className={styles.you}>you</span>
-              </li>
-            ))}
-          </ol>
-        </aside>
+        <div className={styles.card}>
+          <h2 className={styles.cardTitle}>Board</h2>
+          <div className={styles.field}>
+            <span>Scores</span>
+            <div className={styles.seg} role="group" aria-label="Score window">
+              <button
+                type="button"
+                className={props.windowMode === "last" ? styles.segOn : styles.segOff}
+                aria-pressed={props.windowMode === "last"}
+                onClick={() => props.onWindow("last")}
+              >
+                Last (2025-26)
+              </button>
+              <button
+                type="button"
+                className={props.windowMode === "three_yr" ? styles.segOn : styles.segOff}
+                aria-pressed={props.windowMode === "three_yr"}
+                onClick={() => props.onWindow("three_yr")}
+              >
+                3-year
+              </button>
+            </div>
+          </div>
+          {props.windowMode === "three_yr" ? (
+            <p className={styles.cardHint}>
+              3-year is GP-weighted. Each row shows seasons used as a small N/3; missing seasons
+              are n/a
+              {props.board
+                ? ` (${props.board.complete_count} complete, ${props.board.partial_count} partial).`
+                : "."}
+            </p>
+          ) : null}
+          <div className={styles.field}>
+            <span>Suggestions</span>
+            <div className={styles.seg} role="group" aria-label="Suggest mode">
+              <button
+                type="button"
+                className={props.suggestMode === "cover" ? styles.segOn : styles.segOff}
+                aria-pressed={props.suggestMode === "cover"}
+                onClick={() => props.onMode("cover")}
+              >
+                Cover weak cats
+              </button>
+              <button
+                type="button"
+                className={props.suggestMode === "stack" ? styles.segOn : styles.segOff}
+                aria-pressed={props.suggestMode === "stack"}
+                onClick={() => props.onMode("stack")}
+              >
+                Stack strong cats
+              </button>
+            </div>
+          </div>
+          {props.picks ? (
+            <p className={styles.cardHint}>
+              Your picks: {props.picks.map((p) => `#${p.overall}`).join(" · ")}
+            </p>
+          ) : null}
+          {props.hasPicks ? (
+            <button type="button" className={styles.textBtn} onClick={props.onReset}>
+              Reset draft
+            </button>
+          ) : null}
+        </div>
       </div>
       <div className={styles.setupActions}>
         <button type="button" className={styles.primary} onClick={props.onContinue}>
-          Continue to board
+          Save and open board
         </button>
       </div>
     </section>
@@ -452,14 +559,6 @@ function SetupBlock(props: {
 function LoadingBlock() {
   return (
     <section aria-busy="true" aria-label="Loading draft board">
-      <p className={styles.kicker}>Draft board</p>
-      <h1 className={styles.h1}>Player scores</h1>
-      <div className={styles.skelChips}>
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
       <div className={styles.skelTable}>
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className={styles.skelRow} />
@@ -475,29 +574,35 @@ function BoardBlock(props: {
   sortKey: SortKey;
   suggestMode: SuggestMode;
   roster: RosterPlayer[];
+  taken: TakenPlayer[];
+  canUndo: boolean;
   board: DraftBoardPayload | null;
   loading: boolean;
   loadError: string | null;
-  onWindow: (w: ScoreWindow) => void;
   onSort: (k: SortKey) => void;
-  onMode: (m: SuggestMode) => void;
-  onPick: (p: DraftBoardPlayer) => void;
+  onMine: (p: DraftBoardPlayer) => void;
+  onTaken: (p: DraftBoardPlayer) => void;
+  onUndo: () => void;
   onRemove: (id: string) => void;
-  onClear: () => void;
   onRetry: () => void;
   onEditSetup: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [limit, setLimit] = useState(PAGE_ROWS);
   const players = useMemo(() => props.board?.players ?? [], [props.board]);
-  const drafted = useMemo(
-    () => new Set(props.roster.map((p) => p.player_id)),
-    [props.roster]
+  const gone = useMemo(
+    () =>
+      new Set([
+        ...props.roster.map((p) => p.player_id),
+        ...props.taken.map((p) => p.player_id),
+      ]),
+    [props.roster, props.taken]
   );
 
   const poolVectors = useMemo(
     () => players.map((p) => vectorOf(p, props.windowMode)),
     [players, props.windowMode]
   );
-
   const rosterVectors = useMemo(() => {
     const byId = new Map(players.map((p) => [p.player_id, p]));
     return props.roster
@@ -505,18 +610,16 @@ function BoardBlock(props: {
       .filter((p): p is DraftBoardPlayer => Boolean(p))
       .map((p) => vectorOf(p, props.windowMode));
   }, [players, props.roster, props.windowMode]);
+  const gaps = useMemo(() => categoryGaps(rosterVectors, poolVectors), [rosterVectors, poolVectors]);
 
-  const gaps = useMemo(
-    () => categoryGaps(rosterVectors, poolVectors),
-    [rosterVectors, poolVectors]
-  );
-
-  const sorted = useMemo(() => {
-    const rows = players.map((p) => ({
-      player: p,
-      score: vectorOf(p, props.windowMode)[props.sortKey],
-      gp: gpOf(p, props.windowMode),
-    }));
+  const available = useMemo(() => {
+    const rows = players
+      .filter((p) => !gone.has(p.player_id))
+      .map((p) => ({
+        player: p,
+        score: vectorOf(p, props.windowMode)[props.sortKey],
+        gp: gpOf(p, props.windowMode),
+      }));
     rows.sort((a, b) => {
       const af = finite(a.score);
       const bf = finite(b.score);
@@ -526,106 +629,78 @@ function BoardBlock(props: {
       const bg = finite(b.gp);
       if (ag !== bg) return ag ? -1 : 1;
       if (ag && bg && a.gp !== b.gp) return (b.gp as number) - (a.gp as number);
-      return a.player.player_id.localeCompare(b.player.player_id, "en", {
-        numeric: true,
-      });
+      return a.player.player_id.localeCompare(b.player.player_id, "en", { numeric: true });
     });
     return rows;
-  }, [players, props.sortKey, props.windowMode]);
+  }, [players, gone, props.sortKey, props.windowMode]);
+
+  const q = query.trim();
+  const shown = useMemo(
+    () => (q ? available.filter((r) => nameMatches(r.player.full_name, q)) : available),
+    [available, q]
+  );
 
   const suggestions = useMemo(() => {
     const candidates = players
-      .filter((p) => !drafted.has(p.player_id))
-      .map((p) => ({
-        player: p,
-        player_id: p.player_id,
-        scores: vectorOf(p, props.windowMode),
-      }));
+      .filter((p) => !gone.has(p.player_id))
+      .map((p) => ({ player: p, player_id: p.player_id, scores: vectorOf(p, props.windowMode) }));
     return rankSuggestions(candidates, props.suggestMode, gaps);
-  }, [players, drafted, props.windowMode, props.suggestMode, gaps]);
+  }, [players, gone, props.windowMode, props.suggestMode, gaps]);
 
-  const top = suggestions[0];
-  const neighbors = useMemo(() => {
-    if (!props.board || !top) return [];
-    const bucket =
-      props.windowMode === "three_yr"
-        ? props.board.similarity.three_yr
-        : props.board.similarity.last;
-    const list = bucket[top.player.player_id] ?? [];
-    const names = new Map(players.map((p) => [p.player_id, p.full_name]));
-    return list
-      .filter((n) => n.rank >= 1 && n.rank <= SIMILARITY_K)
-      .filter((n) => !drafted.has(n.player_id))
-      .slice(0, SIMILARITY_K)
-      .map((n) => ({
-        ...n,
-        name: names.get(n.player_id) ?? n.player_id,
-      }));
-  }, [props.board, props.windowMode, top, players, drafted]);
+  // Pick clock: overall pick now, and how many picks until yours (DRAFT-RULES §1).
+  const picksMade = props.roster.length + props.taken.length;
+  const current = picksMade + 1;
+  const yours = useMemo(() => yourPicks(props.setup).map((p) => p.overall), [props.setup]);
+  const nextYours = yours[props.roster.length] ?? null;
+  const until = nextYours == null ? null : nextYours - current;
+  const sortLabel = SORT_CHIPS.find((c) => c.key === props.sortKey)?.label ?? "O1";
 
-  const weightsNote = weightCaption(props.suggestMode, gaps);
-  const windowLabel =
-    props.windowMode === "last"
-      ? `Last (${props.board?.last_season ?? "2025-26"})`
-      : "3yr";
+  function act(fn: (p: DraftBoardPlayer) => void, p: DraftBoardPlayer) {
+    fn(p);
+    setQuery("");
+  }
 
   return (
     <section>
-      <div className={styles.boardHead}>
-        <div>
-          <p className={styles.kicker}>Draft board</p>
-          <h1 className={styles.h1}>Player scores</h1>
-          <p className={styles.cardHint}>
-            {props.setup.format === "snake" ? "Snake" : "Straight"} · slot{" "}
-            {props.setup.s} of {props.setup.n} · {props.setup.r} rounds · playoffs
-            off ·{" "}
-            <button type="button" className={styles.linkBtn} onClick={props.onEditSetup}>
-              Edit setup
-            </button>
-          </p>
-        </div>
-        <div className={styles.headToggles}>
-          <div
-            className={styles.seg}
-            role="group"
-            aria-label="Score window"
-          >
-            <button
-              type="button"
-              className={props.windowMode === "last" ? styles.segOn : styles.segOff}
-              aria-pressed={props.windowMode === "last"}
-              onClick={() => props.onWindow("last")}
-            >
-              Last (2025-26)
-            </button>
-            <button
-              type="button"
-              className={props.windowMode === "three_yr" ? styles.segOn : styles.segOff}
-              aria-pressed={props.windowMode === "three_yr"}
-              onClick={() => props.onWindow("three_yr")}
-            >
-              3-year
-            </button>
+      <div className={styles.bar} role="region" aria-label="Pick clock and search">
+        <div className={styles.barRow}>
+          <div className={styles.clock}>
+            <span className={styles.clockNum}>Pick {current}</span>
+            <span className={until != null && until <= 0 ? styles.clockYou : styles.clockSub}>
+              {nextYours == null
+                ? "Your picks are done"
+                : until != null && until <= 0
+                  ? "You're up"
+                  : `${until} until you (#${nextYours})`}
+            </span>
           </div>
-          <div className={styles.seg} role="group" aria-label="Suggest mode">
+          <div className={styles.barActions}>
             <button
               type="button"
-              className={props.suggestMode === "cover" ? styles.segOn : styles.segOff}
-              aria-pressed={props.suggestMode === "cover"}
-              onClick={() => props.onMode("cover")}
+              className={styles.barBtn}
+              onClick={props.onUndo}
+              disabled={!props.canUndo}
             >
-              Cover
+              Undo
             </button>
-            <button
-              type="button"
-              className={props.suggestMode === "stack" ? styles.segOn : styles.segOff}
-              aria-pressed={props.suggestMode === "stack"}
-              onClick={() => props.onMode("stack")}
-            >
-              Stack
+            <button type="button" className={styles.barBtn} onClick={props.onEditSetup}>
+              Setup
             </button>
           </div>
         </div>
+        <input
+          className={styles.search}
+          type="search"
+          inputMode="search"
+          autoComplete="off"
+          placeholder="Search players"
+          aria-label="Search players"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setLimit(PAGE_ROWS);
+          }}
+        />
       </div>
 
       {props.loading && !props.board ? <LoadingBlock /> : null}
@@ -634,7 +709,7 @@ function BoardBlock(props: {
         <div className={styles.errorCard} role="alert">
           <p className={styles.emptyTitle}>Couldn&apos;t load draft board</p>
           <p className={styles.emptyBody}>
-            {props.loadError}. Setup and live picks on this device are unchanged.
+            {props.loadError}. Setup and picks on this device are unchanged.
           </p>
           <button type="button" className={styles.primary} onClick={props.onRetry}>
             Retry
@@ -643,159 +718,113 @@ function BoardBlock(props: {
       ) : null}
 
       {props.board ? (
-        <>
-          {props.windowMode === "three_yr" ? (
-            <div className={styles.honestyRow}>
-              <span className={styles.partialBadge}>
-                {props.board.partial_count > 0 ? "Partial pool" : "Complete pool"} ·{" "}
-                {props.board.board_size}
-              </span>
-              <p>
-                3yr GP-weighted · missing seasons = n/a · coverage chip per row ·
-                toggle always on · complete {props.board.complete_count} · partial{" "}
-                {props.board.partial_count}
-              </p>
+        <div className={styles.layout}>
+          <div className={styles.boardCol}>
+            <div className={styles.chips} role="toolbar" aria-label="Sort by">
+              {SORT_CHIPS.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  className={props.sortKey === chip.key ? styles.chipOn : styles.chip}
+                  aria-pressed={props.sortKey === chip.key}
+                  onClick={() => props.onSort(chip.key)}
+                >
+                  {chip.label}
+                </button>
+              ))}
             </div>
-          ) : null}
-
-          <div className={styles.chips} role="toolbar" aria-label="Sort categories">
-            {SORT_CHIPS.map((chip) => (
-              <button
-                key={chip.key}
-                type="button"
-                className={props.sortKey === chip.key ? styles.chipOn : styles.chip}
-                aria-pressed={props.sortKey === chip.key}
-                onClick={() => props.onSort(chip.key)}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.layout}>
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
+            <div className={styles.boardWrap}>
+              <table className={styles.board}>
                 <caption className={styles.srOnly}>
-                  Published {windowLabel} fantasy scores. Nulls show as n/a.
+                  Available players, sorted by {sortLabel}. Nulls show as n/a.
                 </caption>
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>Player</th>
-                    {props.windowMode === "three_yr" ? <th>N/3</th> : null}
-                    {SORT_CHIPS.map((chip) => (
-                      <th
-                        key={chip.key}
-                        className={
-                          chip.key === props.sortKey ? styles.colActive : styles.col
-                        }
-                        data-active={chip.key === props.sortKey ? "1" : "0"}
-                      >
+                    <th className={styles.thName}>Player</th>
+                    <th className={styles.thScore}>{sortLabel}</th>
+                    <th className={styles.thAct}>
+                      <span className={styles.srOnly}>Mine or taken</span>
+                    </th>
+                    {SORT_CHIPS.filter((c) => c.key !== props.sortKey).map((chip) => (
+                      <th key={chip.key} className={styles.thMore}>
                         {chip.label}
                       </th>
                     ))}
-                    <th className={styles.pickCol}> </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sorted.map((row, index) => {
+                  {shown.slice(0, limit).map((row) => {
                     const scores = vectorOf(row.player, props.windowMode);
-                    const onRoster = rosterHasPlayer(props.roster, row.player.player_id);
                     const n = row.player.three_yr?.n_seasons_used;
-                    const muted =
-                      props.windowMode === "three_yr" && !finite(scores[props.sortKey]);
                     const color = getTeamColors(row.player.team_abbreviation)?.chartPrimary;
                     return (
-                      <tr key={row.player.player_id} className={muted ? styles.muted : undefined}>
-                        <td>{finite(scores[props.sortKey]) ? index + 1 : "—"}</td>
-                        <td>
+                      <tr key={row.player.player_id}>
+                        <td className={styles.tdName}>
                           <span className={styles.nameCell}>
                             <TeamMarkPip color={color} size={7} />
-                            <span>{formatShortName(row.player.full_name)}</span>
-                            {row.player.team_abbreviation ? (
-                              <span className={styles.abbr}>
-                                {row.player.team_abbreviation}
-                              </span>
+                            <span className={styles.nameText}>
+                              {formatShortName(row.player.full_name)}
+                            </span>
+                            {props.windowMode === "three_yr" ? (
+                              <span className={styles.cov}>{n == null ? "n/a" : `${n}/3`}</span>
                             ) : null}
                           </span>
                         </td>
-                        {props.windowMode === "three_yr" ? (
-                          <td>
-                            <span
-                              className={
-                                n === 3
-                                  ? styles.cov3
-                                  : n === 2
-                                    ? styles.cov2
-                                    : styles.cov1
-                              }
+                        <td className={styles.tdScore}>{fmtScore(scores[props.sortKey])}</td>
+                        <td className={styles.tdAct}>
+                          <span className={styles.actPair}>
+                            <button
+                              type="button"
+                              className={styles.mineBtn}
+                              onClick={() => act(props.onMine, row.player)}
+                              aria-label={`Mine: ${row.player.full_name}`}
                             >
-                              {n == null ? "n/a" : `${n}/3`}
-                            </span>
-                          </td>
-                        ) : null}
-                        {SORT_CHIPS.map((chip) => (
-                          <td
-                            key={chip.key}
-                            className={
-                              chip.key === props.sortKey ? styles.colActive : styles.col
-                            }
-                            data-active={chip.key === props.sortKey ? "1" : "0"}
-                          >
+                              Mine
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.takenBtn}
+                              onClick={() => act(props.onTaken, row.player)}
+                              aria-label={`Taken: ${row.player.full_name}`}
+                            >
+                              Taken
+                            </button>
+                          </span>
+                        </td>
+                        {SORT_CHIPS.filter((c) => c.key !== props.sortKey).map((chip) => (
+                          <td key={chip.key} className={styles.tdMore}>
                             {fmtScore(scores[chip.key])}
                           </td>
                         ))}
-                        <td className={styles.pickCol}>
-                          <button
-                            type="button"
-                            className={onRoster ? styles.pickOn : styles.pick}
-                            onClick={() => props.onPick(row.player)}
-                          >
-                            {onRoster ? "On team" : "Draft"}
-                          </button>
-                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+              {shown.length === 0 ? (
+                <p className={styles.soft}>No available player matches “{q}”.</p>
+              ) : null}
             </div>
-
-            <aside className={styles.rail}>
-              <LivePanel
-                roster={props.roster}
-                players={players}
-                windowMode={props.windowMode}
-                gaps={gaps}
-                onRemove={props.onRemove}
-                onClear={props.onClear}
-              />
-              <SuggestPanel
-                mode={props.suggestMode}
-                weightsNote={weightsNote}
-                suggestions={suggestions.slice(0, 8)}
-                neighbors={neighbors}
-                windowMode={props.windowMode}
-                onPick={props.onPick}
-                roster={props.roster}
-              />
-            </aside>
+            {shown.length > limit ? (
+              <button
+                type="button"
+                className={styles.moreBtn}
+                onClick={() => setLimit((l) => l + PAGE_ROWS)}
+              >
+                Show more ({shown.length - limit})
+              </button>
+            ) : null}
           </div>
 
-          <section id="live-team" className={styles.profile} aria-label="Team category profile">
-            <div className={styles.profileHead}>
-              <div>
-                <p className={styles.kicker}>Live roster</p>
-                <h2 className={styles.h2}>Team category profile</h2>
-                <p className={styles.cardHint}>
-                  {props.roster.length} picks · gaps vs board pool mean · {windowLabel}
-                </p>
-              </div>
-              <span className={styles.windowPill}>{windowLabel}</span>
-            </div>
-            <GapList gaps={gaps} empty={props.roster.length === 0} />
-          </section>
-        </>
+          <aside className={styles.rail}>
+            <LivePanel roster={props.roster} players={players} onRemove={props.onRemove} />
+            <SuggestPanel
+              mode={props.suggestMode}
+              suggestions={suggestions.slice(0, 6)}
+              onMine={props.onMine}
+            />
+          </aside>
+        </div>
       ) : null}
     </section>
   );
@@ -804,32 +833,22 @@ function BoardBlock(props: {
 function LivePanel(props: {
   roster: RosterPlayer[];
   players: DraftBoardPlayer[];
-  windowMode: ScoreWindow;
-  gaps: CatGap[];
   onRemove: (id: string) => void;
-  onClear: () => void;
 }) {
   const byId = new Map(props.players.map((p) => [p.player_id, p]));
-  const shown = props.gaps.filter((g) => g.gap != null).slice(0, 3);
   const { data: hotCold } = useHotCold();
   return (
     <div className={styles.card}>
       <div className={styles.cardHead}>
-        <h2 className={styles.cardTitle}>
-          Live team
-          {props.windowMode === "three_yr" ? " · 3yr" : ""}
-        </h2>
+        <h2 className={styles.cardTitle}>Your team</h2>
         <span className={styles.count}>
           {props.roster.length}/{TEAM_ROSTER_MAX}
         </span>
       </div>
       {props.roster.length === 0 ? (
-        <p className={styles.soft}>
-          No picks yet. Draft from the board — strengths and weaknesses show up
-          against the pool. Nothing is invented.
-        </p>
+        <p className={styles.soft}>Tap Mine on the board to add your picks.</p>
       ) : (
-        <ul className={styles.liveList}>
+        <ul className={styles.pickList}>
           {props.roster.map((r) => {
             const player = byId.get(r.player_id);
             // Pick card: OFF/DEF/EFF + last season's overall (score_o1, 2025-26 Last).
@@ -837,177 +856,83 @@ function LivePanel(props: {
             const hot = hotCold?.hot_cold.players[r.player_id];
             return (
               <li key={r.player_id} className={styles.pickCard}>
-                <span className={styles.pickMain}>
-                  <span>{formatShortName(r.full_name)}</span>
-                  <span className={styles.pickScores}>
-                    <span>OFF {fmtScore(last?.off)}</span>
-                    <span>DEF {fmtScore(last?.def)}</span>
-                    <span>EFF {fmtScore(last?.eff)}</span>
-                    <span>O1 {fmtScore(last?.o1)}</span>
-                  </span>
-                  <span
-                    className={styles.pickHot}
-                    title="Hot/cold: 2025-26 vs own 2023-24–2025-26 average, 9 stats, TOV down = hot. Blank under 20 GP / 200 min or fewer than 6 of 9."
+                <div className={styles.pickTop}>
+                  <span className={styles.pickName}>{formatShortName(r.full_name)}</span>
+                  <button
+                    type="button"
+                    className={styles.quietRemove}
+                    onClick={() => props.onRemove(r.player_id)}
+                    aria-label={`Remove ${r.full_name}`}
                   >
-                    hot/cold {hotCold ? fmtHotPct(hot?.hot_read) : "…"}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  className={styles.remove}
-                  onClick={() => props.onRemove(r.player_id)}
-                  aria-label={`Remove ${r.full_name}`}
+                    ×
+                  </button>
+                </div>
+                <dl className={styles.pickScores}>
+                  {(
+                    [
+                      ["OFF", last?.off],
+                      ["DEF", last?.def],
+                      ["EFF", last?.eff],
+                      ["O1", last?.o1],
+                    ] as [string, number | null | undefined][]
+                  ).map(([label, v]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{fmtScore(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <StatLine values={player?.avgs ?? null} />
+                <p
+                  className={styles.pickHot}
+                  title="2025-26 vs his own 3-year average, 9 stats, fewer turnovers = hot. Blank under 20 GP / 200 min or fewer than 6 of 9."
                 >
-                  Remove
-                </button>
+                  hot/cold {hotCold ? fmtHotPct(hot?.hot_read) : "…"}
+                </p>
               </li>
             );
           })}
         </ul>
       )}
-      {shown.length > 0 ? (
-        <ul className={styles.miniGaps} aria-label="Sample category gaps">
-          {shown.map((g) => (
-            <li key={g.key}>
-              <span>{g.label}</span>
-              <span className={styles.barTrack}>
-                <span
-                  className={
-                    g.labelSw === "S"
-                      ? styles.barS
-                      : g.labelSw === "W"
-                        ? styles.barW
-                        : styles.barN
-                  }
-                  style={{ width: barWidth(g.gap) }}
-                />
-              </span>
-              <span className={styles.sw}>{g.labelSw}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {props.roster.length > 0 ? (
-        <button type="button" className={styles.textBtn} onClick={props.onClear}>
-          Clear roster
-        </button>
-      ) : null}
     </div>
   );
 }
 
 function SuggestPanel(props: {
   mode: SuggestMode;
-  weightsNote: string;
   suggestions: ReturnType<typeof rankSuggestions<{ player: DraftBoardPlayer; player_id: string; scores: ScoreVector }>>;
-  neighbors: { player_id: string; name: string; similarity: number; rank: number }[];
-  windowMode: ScoreWindow;
-  onPick: (p: DraftBoardPlayer) => void;
-  roster: RosterPlayer[];
+  onMine: (p: DraftBoardPlayer) => void;
 }) {
-  const plus = props.mode === "stack" ? "++" : "+";
-  const verb = props.mode === "stack" ? "stacks" : "covers";
   return (
     <div className={styles.card} id="suggest">
       <div className={styles.cardHead}>
-        <h2 className={styles.cardTitle}>
-          {props.mode === "cover" ? "Suggest · Cover" : "Suggest · Stack"}
-        </h2>
-        <span className={styles.cardHint}>
-          {props.mode === "cover" ? "lift weak cats" : "extend strong cats"}
-        </span>
+        <h2 className={styles.cardTitle}>Suggested</h2>
+        <span className={styles.count}>{props.mode === "cover" ? "cover" : "stack"}</span>
       </div>
-      <p className={styles.cardHint}>weights on {props.weightsNote}</p>
       {props.suggestions.length === 0 ? (
         <p className={styles.soft}>No eligible players with a full 9-cat vector.</p>
       ) : (
         <ol className={styles.suggestList}>
-          {props.suggestions.map((row, i) => {
-            const onRoster = rosterHasPlayer(props.roster, row.player.player_id);
-            return (
-              <li key={row.player.player_id}>
-                <button
-                  type="button"
-                  className={styles.suggestBtn}
-                  onClick={() => props.onPick(row.player)}
-                  disabled={onRoster}
-                >
-                  <span className={styles.suggestRank}>{i + 1}</span>
-                  <span className={styles.suggestMain}>
-                    <span>{formatShortName(row.player.full_name)}</span>
-                    <span className={styles.suggestSub}>
-                      {verb} {row.focusLabel ?? "—"} · O1 {fmtScore(row.o1)}
-                    </span>
-                  </span>
-                  <span className={props.mode === "stack" ? styles.stackTag : styles.coverTag}>
-                    {row.focusLabel ?? "—"}
-                    {plus}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+          {props.suggestions.map((row) => (
+            <li key={row.player.player_id}>
+              <span className={styles.suggestMain}>
+                <span className={styles.pickName}>{formatShortName(row.player.full_name)}</span>
+                <span className={styles.suggestSub}>
+                  {row.focusLabel ?? "—"} · O1 {fmtScore(row.o1)}
+                </span>
+              </span>
+              <button
+                type="button"
+                className={styles.mineBtn}
+                onClick={() => props.onMine(row.player)}
+                aria-label={`Mine: ${row.player.full_name}`}
+              >
+                Mine
+              </button>
+            </li>
+          ))}
         </ol>
       )}
-      <div className={styles.simBlock}>
-        <p className={styles.cardHint}>
-          Similar players · secondary · cosine on 9-cat{" "}
-          {props.windowMode === "three_yr" ? "3yr" : "Last"} · K={SIMILARITY_K}
-        </p>
-        <div className={styles.simChips}>
-          {props.neighbors.length === 0 ? (
-            <span className={styles.soft}>No neighbor chips</span>
-          ) : (
-            props.neighbors.map((n) => (
-              <span key={n.player_id} className={styles.simChip} title={n.similarity.toFixed(3)}>
-                ~ {formatShortName(n.name)}
-              </span>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
-}
-
-function GapList({ gaps, empty }: { gaps: CatGap[]; empty: boolean }) {
-  if (empty) {
-    return (
-      <p className={styles.soft}>
-        Live team is empty. Category gaps stay blank until you draft — no zero-filled
-        profile.
-      </p>
-    );
-  }
-  return (
-    <ul className={styles.gapList}>
-      {gaps.map((g) => (
-        <li key={g.key}>
-          <span className={styles.gapLabel}>{g.label}</span>
-          <span className={styles.barTrackWide}>
-            {g.gap == null ? null : (
-              <span
-                className={
-                  g.labelSw === "S"
-                    ? styles.barS
-                    : g.labelSw === "W"
-                      ? styles.barW
-                      : styles.barN
-                }
-                style={{ width: barWidth(g.gap) }}
-              />
-            )}
-          </span>
-          <span className={styles.sw}>{g.labelSw ?? "—"}</span>
-          <span className={styles.gapNum}>{g.gap == null ? "n/a" : fmtGap(g.gap)}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function barWidth(gap: number | null): string {
-  if (!finite(gap)) return "0%";
-  const mag = Math.min(100, Math.abs(gap) * 4);
-  return `${Math.max(8, mag)}%`;
 }

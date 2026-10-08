@@ -1,0 +1,33 @@
+.line {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 0 0.15rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.cell dt {
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  color: var(--fh-text-dim);
+  font-weight: 600;
+}
+
+.cell dd {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--fh-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.na {
+  color: var(--fh-text-dim) !important;
+}

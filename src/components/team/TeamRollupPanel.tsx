@@ -140,11 +140,10 @@ export function TeamRollupPanel(props: {
     <section className={styles.panel} aria-label="Team categories">
       <div className={styles.head}>
         <div>
-          <p className={styles.kicker}>Team · live</p>
-          <h2 className={styles.h2}>Categories</h2>
+          <h2 className={styles.h2}>Your team</h2>
         </div>
         <span className={styles.meta}>
-          {props.roster.length}/15 · 2025-26 scores
+          {props.roster.length}/15
         </span>
       </div>
 
@@ -164,7 +163,6 @@ export function TeamRollupPanel(props: {
       </div>
       <p className={styles.hotQuiet}>
         hot/cold {empty ? "—" : fmtHotPct(rollup.hot_read.mean)}
-        {!empty ? ` · ${rollup.hot_read.n} of ${rollup.members}` : ""}
       </p>
 
       {boardError || hotError ? (
@@ -260,14 +258,9 @@ export function TeamRollupPanel(props: {
         </tbody>
       </table>
       <p className={styles.foot}>
-        Your roster = mean of picks&apos; 2025-26 published scores (not padded to 15
-        {rollup.members > rollup.scored_members
-          ? `; ${rollup.members - rollup.scored_members} outside the scored pool skipped`
-          : ""}
-        ). Avg team / slot = baseline_teams, 2021-22 to 2025-26, snake best-available
-        {base.league ? `, ${base.league.rounds} rounds` : ""}. Hot = mean % vs own
-        3-yr average (TOV down = hot), blanks skipped.
-        {!props.setup ? " Set up the draft (N, S) to show the baselines." : ""}
+        Your team is the average of your picks&apos; 2025-26 scores. Average team and slot
+        average come from simulated snake drafts, 2021-22 to 2025-26. Hot/cold is the percent
+        versus each player&apos;s own 3-year average, and fewer turnovers count as hot.
       </p>
     </section>
   );
