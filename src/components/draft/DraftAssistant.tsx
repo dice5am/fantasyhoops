@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { StatLine } from "@/components/StatLine";
 import { ListIconLegend, ListIconRow } from "@/components/draft/ListIcons";
+import { SortControl, sortChoiceLabel, type SortChoice } from "@/components/draft/SortControl";
 import type { ListMembership } from "@/lib/draftListMembership";
 import { BAND_CATS, bandCuts, bandOf, statLineBands, topPoolIds, type BandCuts } from "@/lib/draftBands";
 import type { NineScoreKey } from "@/types/hot_cold";
@@ -129,6 +130,7 @@ export function DraftAssistant(props: { membership?: ListMembership | null } = {
   const [windowMode, setWindowMode] = useState<ScoreWindow>("last");
   const [suggestMode, setSuggestMode] = useState<SuggestMode>("stack");
   const [sortKey, setSortKey] = useState<SortKey>("o1");
+  const [sortList, setSortList] = useState<string | null>(null);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [taken, setTaken] = useState<TakenPlayer[]>([]);
   const [history, setHistory] = useState<DraftAction[]>([]);
@@ -352,6 +354,7 @@ export function DraftAssistant(props: { membership?: ListMembership | null } = {
           setup={setup}
           windowMode={windowMode}
           sortKey={sortKey}
+          sortList={sortList}
           suggestMode={suggestMode}
           roster={roster}
           taken={taken}
@@ -359,7 +362,10 @@ export function DraftAssistant(props: { membership?: ListMembership | null } = {
           board={board}
           loading={loading}
           loadError={loadError}
-          onSort={setSortKey}
+          onSort={(k, list) => {
+            setSortKey(k);
+            setSortList(list);
+          }}
           onMine={onMine}
           onTaken={onTaken}
           onUndo={onUndo}
@@ -580,6 +586,7 @@ function BoardBlock(props: {
   setup: DraftSetup;
   windowMode: ScoreWindow;
   sortKey: SortKey;
+  sortList: string | null;
   suggestMode: SuggestMode;
   roster: RosterPlayer[];
   taken: TakenPlayer[];
@@ -587,7 +594,7 @@ function BoardBlock(props: {
   board: DraftBoardPayload | null;
   loading: boolean;
   loadError: string | null;
-  onSort: (k: SortKey) => void;
+  onSort: (k: SortKey, list: string | null) => void;
   onMine: (p: DraftBoardPlayer) => void;
   onTaken: (p: DraftBoardPlayer) => void;
   onUndo: () => void;
@@ -640,12 +647,24 @@ function BoardBlock(props: {
       if (ag && bg && a.gp !== b.gp) return (b.gp as number) - (a.gp as number);
       return a.player.player_id.localeCompare(b.player.player_id, "en", { numeric: true });
     });
-    return rows;
-  }, [players, gone, props.sortKey, props.windowMode]);
+    // List sort: that list's players first in list rank, then everyone else in overall order.
+    const order = props.sortList ? props.membership?.order[props.sortList] : null;
+    if (order) {
+      const rank = new Map(order.map((id, i) => [id, i]));
+      const inList = rows.filter((r) => rank.has(r.player.player_id));
+      inList.sort((a, b) => rank.get(a.player.player_id)! - rank.get(b.player.player_id)!);
+      const rest = rows.filter((r) => !rank.has(r.player.player_id));
+      return { rows: [...inList, ...rest], listCount: inList.length };
+    }
+    return { rows, listCount: null as number | null };
+  }, [players, gone, props.sortKey, props.sortList, props.membership, props.windowMode]);
 
   const q = query.trim();
   const shown = useMemo(
-    () => (q ? available.filter((r) => nameMatches(r.player.full_name, q)) : available),
+    () =>
+      available.rows
+        .map((r, i) => ({ ...r, inList: available.listCount != null && i < available.listCount }))
+        .filter((r) => !q || nameMatches(r.player.full_name, q)),
     [available, q]
   );
 
@@ -691,7 +710,13 @@ function BoardBlock(props: {
   const yours = useMemo(() => yourPicks(props.setup).map((p) => p.overall), [props.setup]);
   const nextYours = yours[props.roster.length] ?? null;
   const until = nextYours == null ? null : nextYours - current;
-  const sortLabel = SORT_CHIPS.find((c) => c.key === props.sortKey)?.label ?? "O1";
+  const choice: SortChoice = props.sortList
+    ? { kind: "list", id: props.sortList }
+    : props.sortKey === "o1"
+      ? { kind: "overall" }
+      : { kind: "stat", key: props.sortKey };
+  const sortLabel = sortChoiceLabel(choice, props.membership);
+  const scoreHead = props.sortKey === "o1" ? "O1" : sortLabel;
 
   function act(fn: (p: DraftBoardPlayer) => void, p: DraftBoardPlayer) {
     fn(p);
@@ -736,6 +761,7 @@ function BoardBlock(props: {
             </button>
           </div>
         </div>
+        <div className={styles.searchRow}>
         <input
           className={styles.search}
           type="search"
@@ -749,6 +775,17 @@ function BoardBlock(props: {
             setLimit(PAGE_ROWS);
           }}
         />
+        <SortControl
+          choice={choice}
+          membership={props.membership}
+          onChoose={(c) => {
+            if (c.kind === "overall") props.onSort("o1", null);
+            else if (c.kind === "stat") props.onSort(c.key, null);
+            else props.onSort("o1", c.id);
+            setLimit(PAGE_ROWS);
+          }}
+        />
+        </div>
         {legendOpen ? <ListIconLegend membership={props.membership} /> : null}
         {legendOpen ? <ShadeLegend /> : null}
       </div>
@@ -770,19 +807,6 @@ function BoardBlock(props: {
       {props.board ? (
         <div className={styles.layout}>
           <div className={styles.boardCol}>
-            <div className={styles.chips} role="toolbar" aria-label="Sort by">
-              {SORT_CHIPS.map((chip) => (
-                <button
-                  key={chip.key}
-                  type="button"
-                  className={props.sortKey === chip.key ? styles.chipOn : styles.chip}
-                  aria-pressed={props.sortKey === chip.key}
-                  onClick={() => props.onSort(chip.key)}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
             <div className={styles.boardWrap}>
               <table className={styles.board}>
                 <caption className={styles.srOnly}>
@@ -791,7 +815,7 @@ function BoardBlock(props: {
                 <thead>
                   <tr>
                     <th className={styles.thName}>Player</th>
-                    <th className={styles.thScore}>{sortLabel}</th>
+                    <th className={styles.thScore}>{scoreHead}</th>
                     <th className={styles.thAct}>
                       <span className={styles.srOnly}>Mine or taken</span>
                     </th>
@@ -803,12 +827,20 @@ function BoardBlock(props: {
                   </tr>
                 </thead>
                 <tbody>
-                  {shown.slice(0, limit).map((row) => {
+                  {shown.slice(0, limit).map((row, i, arr) => {
+                    const divider = available.listCount != null && !row.inList && (i === 0 ? false : arr[i - 1].inList);
                     const scores = vectorOf(row.player, props.windowMode);
                     const n = row.player.three_yr?.n_seasons_used;
                     const color = getTeamColors(row.player.team_abbreviation)?.chartPrimary;
                     return (
                       <Fragment key={row.player.player_id}>
+                      {divider ? (
+                        <tr className={styles.dividerRow}>
+                          <td colSpan={99}>
+                            <span className={styles.dividerLabel}>Everyone else</span>
+                          </td>
+                        </tr>
+                      ) : null}
                       <tr className={styles.rowMain}>
                         <td className={styles.tdName}>
                           <span className={styles.nameCell}>
