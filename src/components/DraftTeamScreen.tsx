@@ -62,9 +62,13 @@ export function DraftTeamScreen() {
 
   const done = hydrated && isDraftComplete(setup, roster.length, TEAM_ROSTER_MAX);
 
+  const picked = roster.length > 0;
   const team = (
     <div className={styles.team} id="team">
-      <TeamRollupPanel roster={roster} setup={setup} />
+      {/* While drafting at desktop width, the full You/Avg/Slot table + chart sit on top. */}
+      <div className={done ? undefined : picked ? styles.rollupBelowNarrow : styles.rollupBelow}>
+        <TeamRollupPanel roster={roster} setup={setup} />
+      </div>
       <Suspense fallback={<div className={styles.loading}>Loading team…</div>}>
         <TeamBoard />
       </Suspense>
@@ -85,6 +89,14 @@ export function DraftTeamScreen() {
         </>
       ) : (
         <>
+          <div className={picked ? styles.stripNarrow : styles.stripTop}>
+            <TeamRollupPanel roster={roster} setup={setup} compact />
+          </div>
+          {picked ? (
+            <div className={styles.rollupTopWide}>
+              <TeamRollupPanel roster={roster} setup={setup} />
+            </div>
+          ) : null}
           {draft}
           {team}
         </>

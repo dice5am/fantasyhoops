@@ -48,6 +48,26 @@ const SPOKES: { key: NineScoreKey; label: string }[] = [
   { key: "tov", label: "TOV" },
 ];
 
+/** Strip order per Design v3 notes: PTS REB AST STL BLK 3PM FG% FT% TOV (score_tov is already inverted). */
+const STRIP_ORDER: { key: NineScoreKey; label: string }[] = [
+  { key: "pts", label: "PTS" },
+  { key: "reb", label: "REB" },
+  { key: "ast", label: "AST" },
+  { key: "stl", label: "STL" },
+  { key: "blk", label: "BLK" },
+  { key: "fg3m", label: "3PM" },
+  { key: "fg_f1", label: "FG%" },
+  { key: "ft_f1", label: "FT%" },
+  { key: "tov", label: "TOV" },
+];
+
+function lastNameOf(full: string): string {
+  const parts = full.trim().split(/\s+/);
+  if (parts.length <= 1) return full;
+  const tail = parts[parts.length - 1];
+  return /^(jr\.?|sr\.?|ii|iii|iv)$/i.test(tail) && parts.length > 2 ? parts[parts.length - 2] : tail;
+}
+
 let boardInflight: Promise<DraftBoardPayload> | null = null;
 function fetchBoard(): Promise<DraftBoardPayload> {
   if (!boardInflight) {
@@ -72,6 +92,8 @@ function fmtScore(v: number | null | undefined): string {
 export function TeamRollupPanel(props: {
   roster: RosterPlayer[];
   setup: DraftSetup | null;
+  /** Draft-screen top strip: name chips + You vs Avg 9-cat tint (no numbers). */
+  compact?: boolean;
 }) {
   const [board, setBoard] = useState<DraftBoardPayload | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
@@ -135,6 +157,46 @@ export function TeamRollupPanel(props: {
   const s = props.setup?.s;
   const avgName = n ? `Avg team · ${n} teams` : "Avg team";
   const slotName = n && s ? `Slot #${s} avg` : "Slot avg";
+
+  if (props.compact) {
+    const picked = props.roster.length;
+    return (
+      <section className={empty ? styles.stripEmpty : styles.strip} aria-label="Your team">
+        <p className={styles.stripHead}>
+          Your team · {picked} picked
+        </p>
+        {empty ? null : (
+          <>
+            <ul className={styles.stripChips} aria-label="Your picks">
+              {props.roster.map((r) => (
+                <li key={r.player_id} className={styles.stripChip}>
+                  {lastNameOf(r.full_name)}
+                </li>
+              ))}
+            </ul>
+            <ul className={styles.stripCats} aria-label="You versus average team">
+              {STRIP_ORDER.map((sp) => {
+                const you = rollup.nine[sp.key].mean;
+                const avg = base.league?.scores[sp.key] ?? null;
+                const known = typeof you === "number" && typeof avg === "number";
+                const up = known && (you as number) >= (avg as number);
+                return (
+                  <li
+                    key={sp.key}
+                    className={!known ? styles.catNa : up ? styles.catUp : styles.catDown}
+                    aria-label={`${sp.label} ${!known ? "n/a" : up ? "above average team" : "below average team"}`}
+                  >
+                    <span>{sp.label}</span>
+                    <span aria-hidden="true">{!known ? "·" : up ? "▲" : "▼"}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className={styles.panel} aria-label="Team categories">
