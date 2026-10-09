@@ -340,9 +340,42 @@
 .heat tfoot th.heatName {
   font-weight: 700;
 }
-.divWrap {
+.bottomRow {
   flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 1rem;
+  align-items: start;
 }
+.divWrap {
+  min-width: 0;
+}
+.miniRadar {
+  min-width: 0;
+}
+.miniRadarBox {
+  width: 100%;
+  height: 180px;
+}
+.miniKey {
+  margin: 0.1rem 0 0;
+  font-size: 0.7rem;
+  color: #8e8172;
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+}
+.miniKey span::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.keyYou::before { background: #fffcf5; }
+.keyAvg::before { background: rgba(247, 231, 206, 0.55); }
+.keySlot::before { background: #b8956a; }
 .divHead {
   margin: 0 0 0.3rem;
   font-size: 0.75rem;

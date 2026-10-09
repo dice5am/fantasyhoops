@@ -164,7 +164,7 @@ export function TeamRollupPanel(props: {
   const slotName = n && s ? `Slot #${s} avg` : "Slot avg";
 
   if (props.top) {
-    return <TeamTopCard roster={props.roster} board={board} rollup={rollup} avg={base.league?.scores ?? null} avgName={avgName} />;
+    return <TeamTopCard roster={props.roster} board={board} rollup={rollup} avg={base.league?.scores ?? null} avgName={avgName} radarData={radarData} slotName={slotName} />;
   }
 
   if (props.compact) {
@@ -359,6 +359,8 @@ function TeamTopCard(props: {
   rollup: ReturnType<typeof computeTeamRollup>;
   avg: Partial<Record<NineScoreKey, number | null>> | null;
   avgName: string;
+  radarData: { cat: string; you: number | null; avg: number | null; slot: number | null }[];
+  slotName: string;
 }) {
   const byId = useMemo(() => new Map((props.board?.players ?? []).map((p) => [p.player_id, p])), [props.board]);
   const cuts: BandCuts = useMemo(() => {
@@ -462,6 +464,7 @@ function TeamTopCard(props: {
           </table>
         </div>
 
+        <div className={styles.bottomRow}>
         <div className={styles.divWrap} aria-label={`Team versus ${props.avgName}`}>
           <p className={styles.divHead}>You vs {props.avgName}</p>
           <ul className={styles.divList}>
@@ -489,6 +492,32 @@ function TeamTopCard(props: {
               );
             })}
           </ul>
+        </div>
+        <div className={styles.miniRadar} aria-label="9-cat shape">
+          <p className={styles.divHead}>9-cat shape</p>
+          <div className={styles.miniRadarBox}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={props.radarData} cx="50%" cy="50%" outerRadius="70%">
+                <PolarGrid stroke="rgba(255,255,255,0.12)" />
+                <PolarAngleAxis dataKey="cat" tick={{ fill: "#cbd5e1", fontSize: 9 }} />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                <Radar name={props.avgName} dataKey="avg" stroke="rgba(247, 231, 206, 0.55)" fill="rgba(247, 231, 206, 0.22)" fillOpacity={0.45} strokeOpacity={0.55} strokeWidth={1} isAnimationActive={false} />
+                <Radar name={props.slotName} dataKey="slot" stroke="#B8956A" fill="#B8956A" fillOpacity={0.08} strokeDasharray="4 3" strokeWidth={1.25} isAnimationActive={false} />
+                {props.roster.length > 0 ? (
+                  <Radar name="Your roster" dataKey="you" stroke="#FFFCF5" fill="#F7E7CE" fillOpacity={0.18} strokeWidth={1.75} isAnimationActive={false} />
+                ) : null}
+                <Tooltip
+                  wrapperStyle={{ maxWidth: 240, zIndex: 20 }}
+                  contentStyle={{ background: "rgba(12,14,22,0.95)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, color: "#f1f5f9", fontSize: 12 }}
+                  formatter={(value: number | string, name: string) => (value == null || value === "" ? ["n/a", name] : [`${Number(value).toFixed(0)} / 100`, name])}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className={styles.miniKey}>
+            <span className={styles.keyYou}>You</span> <span className={styles.keyAvg}>Avg team</span> <span className={styles.keySlot}>Slot avg</span>
+          </p>
+        </div>
         </div>
       </div>
     </section>
