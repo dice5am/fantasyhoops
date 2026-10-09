@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { StatLine } from "@/components/StatLine";
 import { ListIconLegend, ListIconRow } from "@/components/draft/ListIcons";
+import { InfoLegend } from "@/components/draft/InfoLegend";
 import { SortControl, sortChoiceLabel, type SortChoice } from "@/components/draft/SortControl";
 import type { ListMembership } from "@/lib/draftListMembership";
 import { STATLINE_SCORE_KEY, bandCuts, statLineBands, topPoolIds, BAND_LEVELS, type BandCuts } from "@/lib/draftBands";
@@ -795,6 +796,7 @@ function BoardBlock(props: {
             setLimit(PAGE_ROWS);
           }}
         />
+        <InfoLegend membership={props.membership} />
         </div>
         {legendOpen ? <ListIconLegend membership={props.membership} /> : null}
         {legendOpen ? <ShadeLegend /> : null}
