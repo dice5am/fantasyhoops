@@ -95,7 +95,7 @@ export function DraftTeamScreen(props: { membership?: ListMembership | null }) {
           </div>
           {picked ? (
             <div className={styles.rollupTopWide}>
-              <TeamRollupPanel roster={roster} setup={setup} />
+              <TeamRollupPanel roster={roster} setup={setup} top />
             </div>
           ) : null}
           {draft}

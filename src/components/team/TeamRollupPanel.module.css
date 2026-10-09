@@ -224,3 +224,199 @@
 .catNa {
   color: var(--fh-text-dim);
 }
+
+/* Draft v4 desktop team-on-top: one card, slots (≈280px) | heatmap + diverging bars (stretches to slot height). */
+.topCard {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: stretch;
+}
+.topHead {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--fh-champagne-text);
+}
+.slotCol {
+  min-width: 0;
+}
+.slotList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.slotRow {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+.slotBenchFirst {
+  border-top: 1px solid rgba(247, 231, 206, 0.12);
+}
+.slotLabel {
+  flex: 0 0 40px;
+  font-variant: small-caps;
+  text-transform: lowercase;
+  color: #8e8172;
+  font-size: 0.8rem;
+}
+.slotName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f7e7ce;
+}
+.slotScore {
+  flex: none;
+  color: #f7e7ce;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.slotEmpty {
+  color: #6e6457;
+}
+.slotFoot {
+  margin: 0.45rem 0 0;
+  font-size: 0.7rem;
+  color: #6e6457;
+}
+.rightCol {
+  min-width: 0;
+  height: 0;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.heatWrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.heat {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.heat th,
+.heat td {
+  text-align: right;
+  padding: 0 2px;
+  white-space: nowrap;
+}
+.heat thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(18, 18, 20, 0.96);
+  font-variant: small-caps;
+  font-weight: 600;
+  color: #8e8172;
+  font-size: 0.75rem;
+}
+.heat th.heatName {
+  text-align: left;
+  color: #f7e7ce;
+  font-weight: 500;
+}
+.heat thead th.heatName {
+  color: #8e8172;
+}
+.heat tfoot th,
+.heat tfoot td {
+  position: sticky;
+  bottom: 0;
+  background: rgba(18, 18, 20, 0.97);
+  border-top: 1px solid rgba(247, 231, 206, 0.16);
+  padding-top: 3px;
+}
+.heat tfoot th.heatName {
+  font-weight: 700;
+}
+.divWrap {
+  flex: none;
+}
+.divHead {
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  color: #8e8172;
+  font-variant: small-caps;
+}
+.divList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.divRow {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 32px;
+  align-items: center;
+  height: 18px;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+.divLabel {
+  color: #8e8172;
+  font-variant: small-caps;
+}
+.divTrack {
+  position: relative;
+  height: 10px;
+}
+.divAxis {
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  bottom: -4px;
+  width: 1px;
+  background: rgba(247, 231, 206, 0.28);
+}
+.divUp,
+.divDown {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+.divUp {
+  background: #a8d5a2;
+}
+.divDown {
+  background: #f0b4a0;
+}
+.divYou {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #f7e7ce;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.divUp .divYou {
+  left: calc(100% + 4px);
+}
+.divDown .divYou {
+  right: calc(100% + 4px);
+}
+.divNa {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(6px, -50%);
+  font-size: 0.7rem;
+  color: #6e6457;
+}
+.divAvg {
+  color: #6e6457;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

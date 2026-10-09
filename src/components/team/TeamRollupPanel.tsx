@@ -22,6 +22,9 @@ import {
   type TeamScoreSource,
 } from "@/lib/teamRollup";
 import { useHotCold } from "@/lib/useHotCold";
+import { bandCuts, bandOf, topPoolIds, type BandCuts } from "@/lib/draftBands";
+import { bandPillClass } from "@/lib/bandPill";
+import { fitSlots } from "@/lib/rosterSlots";
 import { SCORE_TO_HOT, type NineScoreKey } from "@/types/hot_cold";
 import explorer from "@/components/PlayerExplorer.module.css";
 import styles from "./TeamRollupPanel.module.css";
@@ -94,6 +97,8 @@ export function TeamRollupPanel(props: {
   setup: DraftSetup | null;
   /** Draft-screen top strip: name chips + You vs Avg 9-cat tint (no numbers). */
   compact?: boolean;
+  /** Draft v4 desktop team-on-top card: slots | heatmap + team vs average bars. */
+  top?: boolean;
 }) {
   const [board, setBoard] = useState<DraftBoardPayload | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
@@ -157,6 +162,10 @@ export function TeamRollupPanel(props: {
   const s = props.setup?.s;
   const avgName = n ? `Avg team · ${n} teams` : "Avg team";
   const slotName = n && s ? `Slot #${s} avg` : "Slot avg";
+
+  if (props.top) {
+    return <TeamTopCard roster={props.roster} board={board} rollup={rollup} avg={base.league?.scores ?? null} avgName={avgName} />;
+  }
 
   if (props.compact) {
     const picked = props.roster.length;
@@ -323,6 +332,165 @@ export function TeamRollupPanel(props: {
         average come from simulated snake drafts, 2021-22 to 2025-26. Hot/cold is the percent
         versus each player&apos;s own 3-year average, and fewer turnovers count as hot.
       </p>
+    </section>
+  );
+}
+
+/** Heatmap columns: per-game value (2025-26) shaded on the Last cat score, same as the board. */
+const HEAT_COLS: { key: NineScoreKey; avg: keyof DraftBoardPayload["players"][number]["avgs"]; label: string; pct?: boolean }[] = [
+  { key: "pts", avg: "pts", label: "PTS" },
+  { key: "reb", avg: "reb", label: "REB" },
+  { key: "ast", avg: "ast", label: "AST" },
+  { key: "stl", avg: "stl", label: "STL" },
+  { key: "blk", avg: "blk", label: "BLK" },
+  { key: "fg3m", avg: "fg3m", label: "3PM" },
+  { key: "fg_f1", avg: "fg_pct", label: "FG%", pct: true },
+  { key: "ft_f1", avg: "ft_pct", label: "FT%", pct: true },
+  { key: "tov", avg: "tov", label: "TOV" },
+];
+
+function fmtAvg(v: number | null | undefined, pct?: boolean): string {
+  return typeof v === "number" && Number.isFinite(v) ? (pct ? v * 100 : v).toFixed(1) : "n/a";
+}
+
+function TeamTopCard(props: {
+  roster: RosterPlayer[];
+  board: DraftBoardPayload | null;
+  rollup: ReturnType<typeof computeTeamRollup>;
+  avg: Partial<Record<NineScoreKey, number | null>> | null;
+  avgName: string;
+}) {
+  const byId = useMemo(() => new Map((props.board?.players ?? []).map((p) => [p.player_id, p])), [props.board]);
+  const cuts: BandCuts = useMemo(() => {
+    const players = props.board?.players ?? [];
+    const ids = topPoolIds(players, (p) => p.player_id, (p) => p.scores.o1);
+    return bandCuts(ids.map((id) => byId.get(id)!.scores));
+  }, [props.board, byId]);
+  // Slots: re-fit the whole saved roster every render; nothing stored.
+  const slots = useMemo(
+    () => fitSlots(props.roster.map((r) => ({ player_id: r.player_id, slots: byId.get(r.player_id)?.position?.slots ?? null }))),
+    [props.roster, byId]
+  );
+  const nameOf = new Map(props.roster.map((r) => [r.player_id, r.full_name]));
+  const diffs = STRIP_ORDER.map((c) => {
+    const you = props.rollup.nine[c.key].mean;
+    const avg = props.avg?.[c.key] ?? null;
+    const ok = typeof you === "number" && Number.isFinite(you) && typeof avg === "number" && Number.isFinite(avg);
+    return { ...c, you, avg, d: ok ? (you as number) - (avg as number) : null };
+  });
+  const span = Math.max(10, ...diffs.map((x) => (x.d == null ? 0 : Math.abs(x.d))));
+
+  return (
+    <section className={`${styles.panel} ${styles.topCard}`} aria-label="Your team">
+      <div className={styles.slotCol}>
+        <p className={styles.topHead}>
+          Your team · {props.roster.length} picked
+        </p>
+        <ol className={styles.slotList}>
+          {slots.map((r, i) => {
+            const p = r.playerId ? byId.get(r.playerId) : null;
+            const first = r.bench && (i === 0 || !slots[i - 1].bench);
+            return (
+              <li key={`${r.slot}-${i}`} className={`${styles.slotRow} ${first ? styles.slotBenchFirst : ""}`}>
+                <span className={styles.slotLabel}>{r.slot}</span>
+                {r.playerId ? (
+                  <>
+                    <span className={styles.slotName}>{lastNameOf(nameOf.get(r.playerId) ?? p?.full_name ?? "")}</span>
+                    <span className={styles.slotScore}>{fmtScore(p?.scores.o1)}</span>
+                  </>
+                ) : (
+                  <span className={styles.slotEmpty}>—</span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+        <p className={styles.slotFoot}>Positions from NBA listings</p>
+      </div>
+
+      <div className={styles.rightCol}>
+        <div className={styles.heatWrap}>
+          <table className={styles.heat}>
+            <thead>
+              <tr>
+                <th scope="col" className={styles.heatName}>
+                  2025-26 per game
+                </th>
+                {HEAT_COLS.map((c) => (
+                  <th key={c.key} scope="col">
+                    {c.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {props.roster.map((r) => {
+                const p = byId.get(r.player_id);
+                return (
+                  <tr key={r.player_id}>
+                    <th scope="row" className={styles.heatName}>
+                      {lastNameOf(r.full_name)}
+                    </th>
+                    {HEAT_COLS.map((c) => {
+                      const text = fmtAvg(p?.avgs[c.avg], c.pct);
+                      return (
+                        <td key={c.key}>
+                          <span className={bandPillClass(bandOf(p?.scores[c.key], cuts[c.key]), text === "n/a")}>{text}</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row" className={styles.heatName} title="Average of your picks' 0–100 category scores">
+                  Team score
+                </th>
+                {HEAT_COLS.map((c) => {
+                  const v = props.rollup.nine[c.key].mean;
+                  const text = fmtScore(v);
+                  return (
+                    <td key={c.key}>
+                      <span className={bandPillClass(bandOf(v, cuts[c.key]), text === "n/a")}>{text}</span>
+                    </td>
+                  );
+                })}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div className={styles.divWrap} aria-label={`Team versus ${props.avgName}`}>
+          <p className={styles.divHead}>You vs {props.avgName}</p>
+          <ul className={styles.divList}>
+            {diffs.map((x) => {
+              const w = x.d == null ? 0 : (Math.abs(x.d) / span) * 50;
+              const up = x.d != null && x.d >= 0;
+              return (
+                <li key={x.key} className={styles.divRow}>
+                  <span className={styles.divLabel}>{x.label}</span>
+                  <span className={styles.divTrack}>
+                    <span className={styles.divAxis} />
+                    {x.d != null ? (
+                      <span
+                        className={up ? styles.divUp : styles.divDown}
+                        style={up ? { left: "50%", width: `${w}%` } : { right: "50%", width: `${w}%` }}
+                      >
+                        <span className={styles.divYou}>{fmtScore(x.you)}</span>
+                      </span>
+                    ) : (
+                      <span className={styles.divNa}>n/a</span>
+                    )}
+                  </span>
+                  <span className={styles.divAvg}>{fmtScore(x.avg)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
     </section>
   );
 }
