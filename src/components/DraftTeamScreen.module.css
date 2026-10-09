@@ -62,3 +62,15 @@
     padding: 0.6rem 0.7rem 0;
   }
 }
+
+/* Draft v4 wide: full window with 32px gutters. */
+@media (min-width: 1024px) {
+  .team,
+  .stripTop,
+  .stripNarrow,
+  .rollupTopWide {
+    max-width: none;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}

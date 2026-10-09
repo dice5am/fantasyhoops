@@ -5,8 +5,7 @@ import { StatLine } from "@/components/StatLine";
 import { ListIconLegend, ListIconRow } from "@/components/draft/ListIcons";
 import { SortControl, sortChoiceLabel, type SortChoice } from "@/components/draft/SortControl";
 import type { ListMembership } from "@/lib/draftListMembership";
-import { BAND_CATS, bandCuts, bandOf, statLineBands, topPoolIds, type BandCuts } from "@/lib/draftBands";
-import type { NineScoreKey } from "@/types/hot_cold";
+import { bandCuts, statLineBands, topPoolIds, type Band, type BandCuts } from "@/lib/draftBands";
 import { reasonLine, teamMeans, weakCats } from "@/lib/draftReasons";
 import { TIER_RANGES, tierOf } from "@/lib/draftTiers";
 import { baselinesFor } from "@/lib/teamRollup";
@@ -697,10 +696,6 @@ function BoardBlock(props: {
     () => new Set(topPoolIds(players, (p) => p.player_id, (p) => vectorOf(p, props.windowMode).o1)),
     [players, props.windowMode]
   );
-  const viewCuts = useMemo(
-    () => bandCuts(players.filter((p) => viewTop.has(p.player_id)).map((p) => vectorOf(p, props.windowMode))),
-    [players, viewTop, props.windowMode]
-  );
   // Tiers: separators only, on Overall with no search and no list sort.
   const showTiers = props.sortKey === "o1" && !props.sortList && !q;
   const reasons = useMemo(() => {
@@ -826,7 +821,12 @@ function BoardBlock(props: {
                     <th className={styles.thAct}>
                       <span className={styles.srOnly}>Mine or taken</span>
                     </th>
-                    {SORT_CHIPS.filter((c) => c.key !== props.sortKey).map((chip) => (
+                    {STAT_COLS.map((c) => (
+                      <th key={c.key} className={styles.thStat} title="2025-26 per-game">
+                        {c.label}
+                      </th>
+                    ))}
+                    {MORE_COLS.filter((c) => c.key !== props.sortKey).map((chip) => (
                       <th key={chip.key} className={styles.thMore}>
                         {chip.label}
                       </th>
@@ -846,6 +846,7 @@ function BoardBlock(props: {
                     const tierHead = tier != null && tier !== prevTier ? tier : null;
                     const beyond = showTiers && !inTop && (prev == null || viewTop.has(prev.player.player_id));
                     const scores = vectorOf(row.player, props.windowMode);
+                    const lineBands = statLineBands(row.player.scores, lastCuts);
                     const n = row.player.three_yr?.n_seasons_used;
                     const color = getTeamColors(row.player.team_abbreviation)?.chartPrimary;
                     return (
@@ -910,15 +911,26 @@ function BoardBlock(props: {
                             </button>
                           </span>
                         </td>
-                        {SORT_CHIPS.filter((c) => c.key !== props.sortKey).map((chip) => (
-                          <td key={chip.key} className={`${styles.tdMore} ${shadeClass(scores[chip.key], chip.key, viewCuts)}`}>
+                        {STAT_COLS.map((c) => {
+                          const band = lineBands[c.key];
+                          const text = fmtAvg(row.player.avgs[c.key], c.pct);
+                          return (
+                            <td key={c.key} className={styles.tdStat}>
+                              <span className={`${styles.statPill} ${band && text !== "n/a" ? PILL_CLASS[band] : text === "n/a" ? styles.pillNa : ""}`}>
+                                {text}
+                              </span>
+                            </td>
+                          );
+                        })}
+                        {MORE_COLS.filter((c) => c.key !== props.sortKey).map((chip) => (
+                          <td key={chip.key} className={styles.tdMore}>
                             {fmtScore(scores[chip.key])}
                           </td>
                         ))}
                       </tr>
                       <tr className={styles.rowStats}>
                         <td colSpan={3} className={styles.tdStats}>
-                          <StatLine values={row.player.avgs} bands={statLineBands(row.player.scores, lastCuts)} />
+                          <StatLine values={row.player.avgs} bands={lineBands} />
                         </td>
                       </tr>
                       </Fragment>
@@ -957,15 +969,32 @@ function BoardBlock(props: {
   );
 }
 
-const BAND_KEYS = new Set<string>(BAND_CATS);
-const SHADE_CLASS = { elite: styles.shElite, good: styles.shGood, avg: styles.shAvg, poor: styles.shPoor };
+/** Wide board: the 9 per-game stats as fixed columns (2025-26 averages, banded on Last like the phone line). */
+const STAT_COLS: { key: keyof DraftBoardPlayer["avgs"]; label: string; pct?: boolean }[] = [
+  { key: "pts", label: "PTS" },
+  { key: "reb", label: "REB" },
+  { key: "ast", label: "AST" },
+  { key: "stl", label: "STL" },
+  { key: "blk", label: "BLK" },
+  { key: "fg3m", label: "3PM" },
+  { key: "fg_pct", label: "FG%", pct: true },
+  { key: "ft_pct", label: "FT%", pct: true },
+  { key: "tov", label: "TOV" },
+];
+/** Composite scores kept after the stat columns (O1 shows here when another sort is chosen). */
+const MORE_COLS = SORT_CHIPS.filter((c) => c.key === "o1" || c.key === "off" || c.key === "def" || c.key === "eff");
 
-/** Desktop score columns: shade the 9 cat scores on the selected view; OFF/DEF/EFF/O1 stay plain. */
-function shadeClass(v: number | null | undefined, key: string, cuts: BandCuts): string {
-  if (!BAND_KEYS.has(key)) return "";
-  const b = bandOf(v, cuts[key as NineScoreKey]);
-  return b ? SHADE_CLASS[b] : "";
+function fmtAvg(v: number | null | undefined, pct?: boolean): string {
+  if (!finite(v)) return "n/a";
+  return (pct ? v * 100 : v).toFixed(1);
 }
+
+const PILL_CLASS: Record<Band, string> = {
+  elite: styles.pElite,
+  good: styles.pGood,
+  avg: styles.pAvg,
+  poor: styles.pPoor,
+};
 
 function ShadeLegend() {
   return (

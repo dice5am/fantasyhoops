@@ -1392,3 +1392,56 @@
   color: #d4c4ae;
   font-weight: 600;
 }
+
+/* Draft v4 wide board: 9 per-game stat columns, fixed 76px, tabular, dim small-caps heads. */
+.board th.thStat {
+  width: 76px;
+  min-width: 76px;
+  text-align: right;
+  font-variant: small-caps;
+}
+.board td.tdStat {
+  width: 76px;
+  min-width: 76px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .board th.thStat,
+  .board td.tdStat {
+    display: none;
+  }
+}
+.statPill {
+  display: inline-block;
+  min-width: 3.4em;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border-radius: 6px;
+  text-align: right;
+  color: #bfb09b;
+}
+.pElite {
+  color: #fffcf5;
+  font-weight: 700;
+  background: rgba(247, 231, 206, 0.16);
+}
+.pGood {
+  color: #f7e7ce;
+  font-weight: 600;
+}
+.pAvg {
+  color: #bfb09b;
+}
+.pPoor,
+.pillNa {
+  color: #6e6457;
+}
+/* Wide (>=1024px): full window with 32px gutters, no centred column. 390 unchanged. */
+@media (min-width: 1024px) {
+  .page {
+    max-width: none;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
