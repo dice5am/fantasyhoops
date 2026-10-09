@@ -31,6 +31,36 @@ export function fitSlots(
   for (let pi = 0; pi < picks.length; pi++) tryPlace(pi, STARTER_SLOTS.map(() => false));
 
   const started = new Set(slotOwner.filter((v): v is number => v != null));
+
+  // Same starters, tidier slots: in pick order, each starter takes the most specific slot
+  // (PG before G before Util) that still leaves a full fit for the rest.
+  const order = [...started].sort((a, b) => a - b);
+  const final: (number | null)[] = STARTER_SLOTS.map(() => null);
+  const feasible = (rest: number[], free: boolean[]): boolean => {
+    if (rest.length === 0) return true;
+    const [pi, ...more] = rest;
+    for (let si = 0; si < STARTER_SLOTS.length; si++) {
+      if (!free[si] || !elig[pi].has(STARTER_SLOTS[si])) continue;
+      free[si] = false;
+      const ok = feasible(more, free);
+      free[si] = true;
+      if (ok) return true;
+    }
+    return false;
+  };
+  const free = STARTER_SLOTS.map(() => true);
+  order.forEach((pi, k) => {
+    for (let si = 0; si < STARTER_SLOTS.length; si++) {
+      if (!free[si] || !elig[pi].has(STARTER_SLOTS[si])) continue;
+      free[si] = false;
+      if (feasible(order.slice(k + 1), free)) {
+        final[si] = pi;
+        return;
+      }
+      free[si] = true;
+    }
+  });
+  for (let si = 0; si < final.length; si++) slotOwner[si] = final[si];
   const bench = picks.map((_, i) => i).filter((i) => !started.has(i));
   const rows: SlotRow[] = STARTER_SLOTS.map((slot, si) => ({
     slot,

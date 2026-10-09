@@ -839,11 +839,7 @@ function BoardBlock(props: {
                         {c.label}
                       </th>
                     ))}
-                    {MORE_COLS.filter((c) => c.key !== props.sortKey).map((chip) => (
-                      <th key={chip.key} className={styles.thMore}>
-                        {chip.label}
-                      </th>
-                    ))}
+
                   </tr>
                 </thead>
                 <tbody>
@@ -941,11 +937,7 @@ function BoardBlock(props: {
                             </td>
                           );
                         })}
-                        {MORE_COLS.filter((c) => c.key !== props.sortKey).map((chip) => (
-                          <td key={chip.key} className={styles.tdMore}>
-                            {fmtScore(scores[chip.key])}
-                          </td>
-                        ))}
+
                       </tr>
                       <tr className={styles.rowStats}>
                         <td colSpan={3} className={styles.tdStats}>
@@ -1000,8 +992,6 @@ const STAT_COLS: { key: keyof DraftBoardPlayer["avgs"]; label: string; pct?: boo
   { key: "ft_pct", label: "FT%", pct: true },
   { key: "tov", label: "TOV" },
 ];
-/** Composite scores kept after the stat columns (O1 shows here when another sort is chosen). */
-const MORE_COLS = SORT_CHIPS.filter((c) => c.key === "o1" || c.key === "off" || c.key === "def" || c.key === "eff");
 
 /** No value (e.g. no 2025-26 games on Last): dim "n/a" (Cavin rule), never 0.0, never shaded. */
 const DASH = "n/a";
