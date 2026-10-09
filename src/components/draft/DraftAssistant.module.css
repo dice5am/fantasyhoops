@@ -1178,32 +1178,6 @@
     border-bottom: 1px solid rgba(247, 231, 206, 0.08);
   }
 }
-.board td.shElite,
-.shadeLegend .shElite {
-  color: #fffcf5;
-  font-weight: 700;
-}
-.board td.shElite {
-  background: rgba(247, 231, 206, 0.08);
-}
-.shadeLegend .shElite {
-  background: rgba(247, 231, 206, 0.16);
-  border-radius: 5px;
-  padding: 0 0.3rem;
-}
-.board td.shGood,
-.shadeLegend .shGood {
-  color: #f7e7ce;
-  font-weight: 600;
-}
-.board td.shAvg,
-.shadeLegend .shAvg {
-  color: #bfb09b;
-}
-.board td.shPoor,
-.shadeLegend .shPoor {
-  color: #6e6457;
-}
 .shadeLegend {
   display: flex;
   flex-wrap: wrap;
@@ -1413,29 +1387,8 @@
   }
 }
 .statPill {
-  display: inline-block;
   min-width: 3.4em;
-  box-sizing: border-box;
-  padding: 3px 6px;
-  border-radius: 6px;
   text-align: right;
-  color: #bfb09b;
-}
-.pElite {
-  color: #fffcf5;
-  font-weight: 700;
-  background: rgba(247, 231, 206, 0.16);
-}
-.pGood {
-  color: #f7e7ce;
-  font-weight: 600;
-}
-.pAvg {
-  color: #bfb09b;
-}
-.pPoor,
-.pillNa {
-  color: #6e6457;
 }
 /* Wide (>=1024px): full window with 32px gutters, no centred column. 390 unchanged. */
 @media (min-width: 1024px) {

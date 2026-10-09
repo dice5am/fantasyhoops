@@ -1,0 +1,40 @@
+/* Draft v4 six levels (Design V4 §2). Same pill size everywhere. Never red. */
+.pill {
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.best {
+  background: linear-gradient(135deg, #fffcf5, #e2c291);
+  color: #121214;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(247, 231, 206, 0.55);
+}
+.elite {
+  background: #f7e7ce;
+  color: #121214;
+  font-weight: 700;
+}
+.great {
+  background: rgba(247, 231, 206, 0.3);
+  color: #fffcf5;
+  font-weight: 600;
+}
+.good {
+  background: rgba(247, 231, 206, 0.13);
+  color: #f7e7ce;
+  font-weight: 500;
+}
+.avg {
+  color: #bfb09b;
+  font-weight: 400;
+}
+.poor,
+.na {
+  color: #6e6457;
+  font-weight: 400;
+}

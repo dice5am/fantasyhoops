@@ -5,7 +5,8 @@ import { StatLine } from "@/components/StatLine";
 import { ListIconLegend, ListIconRow } from "@/components/draft/ListIcons";
 import { SortControl, sortChoiceLabel, type SortChoice } from "@/components/draft/SortControl";
 import type { ListMembership } from "@/lib/draftListMembership";
-import { STATLINE_SCORE_KEY, bandCuts, statLineBands, topPoolIds, type Band, type BandCuts } from "@/lib/draftBands";
+import { STATLINE_SCORE_KEY, bandCuts, statLineBands, topPoolIds, BAND_LEVELS, type BandCuts } from "@/lib/draftBands";
+import { bandPillClass } from "@/lib/bandPill";
 import { reasonLine, teamMeans, weakCats } from "@/lib/draftReasons";
 import { TIER_RANGES, tierOf } from "@/lib/draftTiers";
 import { baselinesFor } from "@/lib/teamRollup";
@@ -932,7 +933,7 @@ function BoardBlock(props: {
                           const band = text === DASH ? null : colBands[c.key];
                           return (
                             <td key={c.key} className={styles.tdStat}>
-                              <span className={`${styles.statPill} ${band ? PILL_CLASS[band] : styles.pillNa}`}>
+                              <span className={`${styles.statPill} ${bandPillClass(band, text === DASH)}`}>
                                 {text}
                               </span>
                             </td>
@@ -1010,20 +1011,14 @@ function fmtCatScore(v: number | null | undefined): string {
   return finite(v) ? v.toFixed(0) : DASH;
 }
 
-const PILL_CLASS: Record<Band, string> = {
-  elite: styles.pElite,
-  good: styles.pGood,
-  avg: styles.pAvg,
-  poor: styles.pPoor,
-};
-
-function ShadeLegend() {
+export function ShadeLegend() {
   return (
     <p className={styles.shadeLegend} aria-label="Stat shading">
-      <span className={styles.shElite}>Elite</span>
-      <span className={styles.shGood}>Good</span>
-      <span className={styles.shAvg}>Average</span>
-      <span className={styles.shPoor}>Poor</span>
+      {BAND_LEVELS.map((l) => (
+        <span key={l.band} className={bandPillClass(l.band)}>
+          {l.label}
+        </span>
+      ))}
       <span className={styles.shadeNote}>vs top 200</span>
     </p>
   );

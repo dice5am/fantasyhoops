@@ -1,4 +1,5 @@
 import type { Band } from "@/lib/draftBands";
+import { bandPillClass } from "@/lib/bandPill";
 import styles from "./StatLine.module.css";
 
 /**
@@ -37,12 +38,6 @@ function fmt(v: number | null | undefined, pct?: boolean): string {
 
 export type StatLineBands = Partial<Record<keyof StatLineValues, Band | null>>;
 
-const BAND_CLASS: Record<Band, string> = {
-  elite: styles.elite,
-  good: styles.good,
-  avg: styles.avg,
-  poor: styles.poor,
-};
 
 export function StatLine({
   values,
@@ -62,9 +57,11 @@ export function StatLine({
             <dd
               className={
                 text === "n/a"
-                  ? styles.na
+                  ? bands
+                    ? bandPillClass(null, true)
+                    : styles.na
                   : bands?.[c.key]
-                    ? BAND_CLASS[bands[c.key] as Band]
+                    ? bandPillClass(bands[c.key] as Band)
                     : undefined
               }
             >

@@ -32,23 +32,8 @@
   color: var(--fh-text-dim) !important;
 }
 
-/* Draft v3 stat shading (Design §4): brightness and weight only, never red. */
-.cell dd.elite {
-  color: #fffcf5;
-  font-weight: 700;
-  background: rgba(247, 231, 206, 0.16);
-  border-radius: 5px;
-  padding: 0 0.2rem;
-}
-.cell dd.good {
-  color: #f7e7ce;
-  font-weight: 600;
-}
-.cell dd.avg {
-  color: #bfb09b;
-  font-weight: 400;
-}
-.cell dd.poor {
-  color: #6e6457;
-  font-weight: 400;
+/* Six-level pills come from bandPill.module.css; keep them compact inside the 9-cell line. */
+.cell dd[class*="pill"] {
+  padding: 2px 4px;
+  font-size: 0.72rem;
 }

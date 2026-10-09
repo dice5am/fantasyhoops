@@ -1,19 +1,33 @@
 import type { NineScoreKey } from "@/types/hot_cold";
 
 /**
+ * Draft v4: six levels (Analyst confirmed 2026-10-09): Best >= 97th, Elite 90–97, Great 80–90,
+ * Good 65–80, Average 35–65, Poor < 35. Same top-200-per-view basis as v3 (below).
+ * p70 is kept only for the Suggested "Strong in:" fallback (Analyst v3 rule: >= 70th).
+ *
  * Draft v3 stat bands (Analyst rule): each of the 9 cat scores is ranked by percentile within
  * the top 200 on the board by overall (O1), on whichever view is selected (Last or 3yr).
  * Elite >= 90th, good 70th–90th, average 30th–70th, poor < 30th. Published scores already
  * invert TOV and score FG%/FT% by impact, so higher is always better here. Players outside the
  * top 200 are banded against the same cutoffs. Null stays unshaded (never "poor").
  */
-export type Band = "elite" | "good" | "avg" | "poor";
+export type Band = "best" | "elite" | "great" | "good" | "avg" | "poor";
+
+/** Display order + ranges for legends (best first). */
+export const BAND_LEVELS: { band: Band; label: string; range: string }[] = [
+  { band: "best", label: "Best", range: "97th+" },
+  { band: "elite", label: "Elite", range: "90–97th" },
+  { band: "great", label: "Great", range: "80–90th" },
+  { band: "good", label: "Good", range: "65–80th" },
+  { band: "avg", label: "Average", range: "35–65th" },
+  { band: "poor", label: "Poor", range: "below 35th" },
+];
 
 export const BAND_CATS: NineScoreKey[] = ["pts", "reb", "ast", "stl", "blk", "fg3m", "fg_f1", "ft_f1", "tov"];
 
 export const DRAFTABLE_POOL = 200;
 
-type Cuts = { p90: number; p70: number; p30: number };
+type Cuts = { p97: number; p90: number; p80: number; p70: number; p65: number; p35: number };
 export type BandCuts = Partial<Record<NineScoreKey, Cuts>>;
 export type CatScores = Partial<Record<NineScoreKey, number | null | undefined>>;
 
@@ -40,17 +54,31 @@ export function bandCuts(pool: CatScores[]): BandCuts {
   for (const k of BAND_CATS) {
     const vals = pool.map((p) => p[k]).filter(num).sort((a, b) => a - b);
     if (vals.length < 2) continue;
-    out[k] = { p90: quantile(vals, 0.9), p70: quantile(vals, 0.7), p30: quantile(vals, 0.3) };
+    out[k] = {
+      p97: quantile(vals, 0.97),
+      p90: quantile(vals, 0.9),
+      p80: quantile(vals, 0.8),
+      p70: quantile(vals, 0.7),
+      p65: quantile(vals, 0.65),
+      p35: quantile(vals, 0.35),
+    };
   }
   return out;
 }
 
 export function bandOf(v: number | null | undefined, cuts: Cuts | undefined): Band | null {
   if (!num(v) || !cuts) return null;
+  if (v >= cuts.p97) return "best";
   if (v >= cuts.p90) return "elite";
-  if (v >= cuts.p70) return "good";
-  if (v >= cuts.p30) return "avg";
+  if (v >= cuts.p80) return "great";
+  if (v >= cuts.p65) return "good";
+  if (v >= cuts.p35) return "avg";
   return "poor";
+}
+
+/** Suggested "Strong in:" fallback — Analyst v3 rule, at or above the 70th percentile. */
+export function isStrong(v: number | null | undefined, cuts: Cuts | undefined): boolean {
+  return num(v) && !!cuts && v >= cuts.p70;
 }
 
 /** StatLine (per-game averages) key → the cat score that bands it. */

@@ -1,5 +1,5 @@
 import type { NineScoreKey } from "@/types/hot_cold";
-import { bandOf, type BandCuts } from "@/lib/draftBands";
+import { isStrong, type BandCuts } from "@/lib/draftBands";
 
 /**
  * Draft v3 Suggested reason line, worked out on the page (no new data):
@@ -57,8 +57,8 @@ export function reasonLine(
     const lifts = weak.filter((w) => num(player[w.key]) && (player[w.key] as number) > w.mean).slice(0, 3);
     if (lifts.length > 0) return `Lifts your weakest: ${lifts.map((l) => l.label).join(", ")}`;
   }
-  const strong = REASON_CATS.map((c) => ({ ...c, v: player[c.key], band: bandOf(player[c.key], cuts[c.key]) }))
-    .filter((c) => c.band === "elite" || c.band === "good")
+  const strong = REASON_CATS.map((c) => ({ ...c, v: player[c.key] }))
+    .filter((c) => isStrong(c.v, cuts[c.key]))
     .sort((a, b) => (b.v as number) - (a.v as number))
     .slice(0, 3);
   if (strong.length === 0) return null;
