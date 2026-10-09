@@ -5,7 +5,7 @@ import { StatLine } from "@/components/StatLine";
 import { ListIconLegend, ListIconRow } from "@/components/draft/ListIcons";
 import { SortControl, sortChoiceLabel, type SortChoice } from "@/components/draft/SortControl";
 import type { ListMembership } from "@/lib/draftListMembership";
-import { bandCuts, statLineBands, topPoolIds, type Band, type BandCuts } from "@/lib/draftBands";
+import { STATLINE_SCORE_KEY, bandCuts, statLineBands, topPoolIds, type Band, type BandCuts } from "@/lib/draftBands";
 import { reasonLine, teamMeans, weakCats } from "@/lib/draftReasons";
 import { TIER_RANGES, tierOf } from "@/lib/draftTiers";
 import { baselinesFor } from "@/lib/teamRollup";
@@ -691,6 +691,13 @@ function BoardBlock(props: {
     const ids = topPoolIds(players, (p) => p.player_id, (p) => p.scores.o1);
     return bandCuts(ids.map((id) => byId.get(id)!.scores));
   }, [players]);
+  // 3yr view: cuts from the top 200 by 3yr overall, on 3yr cat scores.
+  const threeCuts = useMemo(() => {
+    const byId = new Map(players.map((p) => [p.player_id, p]));
+    const ids = topPoolIds(players, (p) => p.player_id, (p) => p.three_yr?.scores.o1);
+    return bandCuts(ids.map((id) => byId.get(id)!.three_yr!.scores));
+  }, [players]);
+  const isThree = props.windowMode === "three_yr";
   // Shading on the selected view (Analyst): top 200 by overall in that view.
   const viewTop = useMemo(
     () => new Set(topPoolIds(players, (p) => p.player_id, (p) => vectorOf(p, props.windowMode).o1)),
@@ -816,13 +823,16 @@ function BoardBlock(props: {
                 </caption>
                 <thead>
                   <tr>
-                    <th className={styles.thName}>Player</th>
+                    <th className={styles.thName}>
+                      Player
+                      <span className={styles.thView}>{isThree ? " · 3yr score" : " · 2025-26 avg"}</span>
+                    </th>
                     <th className={styles.thScore}>{scoreHead}</th>
                     <th className={styles.thAct}>
                       <span className={styles.srOnly}>Mine or taken</span>
                     </th>
                     {STAT_COLS.map((c) => (
-                      <th key={c.key} className={styles.thStat} title="2025-26 per-game">
+                      <th key={c.key} className={styles.thStat} title={isThree ? "3yr category score (0–100)" : "2025-26 per-game"}>
                         {c.label}
                       </th>
                     ))}
@@ -847,6 +857,7 @@ function BoardBlock(props: {
                     const beyond = showTiers && !inTop && (prev == null || viewTop.has(prev.player.player_id));
                     const scores = vectorOf(row.player, props.windowMode);
                     const lineBands = statLineBands(row.player.scores, lastCuts);
+                    const colBands = isThree ? statLineBands(row.player.three_yr?.scores, threeCuts) : lineBands;
                     const n = row.player.three_yr?.n_seasons_used;
                     const color = getTeamColors(row.player.team_abbreviation)?.chartPrimary;
                     return (
@@ -912,11 +923,13 @@ function BoardBlock(props: {
                           </span>
                         </td>
                         {STAT_COLS.map((c) => {
-                          const band = lineBands[c.key];
-                          const text = fmtAvg(row.player.avgs[c.key], c.pct);
+                          const text = isThree
+                            ? fmtCatScore(row.player.three_yr?.scores[STATLINE_SCORE_KEY[c.key]])
+                            : fmtAvg(row.player.avgs[c.key], c.pct);
+                          const band = text === DASH ? null : colBands[c.key];
                           return (
                             <td key={c.key} className={styles.tdStat}>
-                              <span className={`${styles.statPill} ${band && text !== "n/a" ? PILL_CLASS[band] : text === "n/a" ? styles.pillNa : ""}`}>
+                              <span className={`${styles.statPill} ${band ? PILL_CLASS[band] : styles.pillNa}`}>
                                 {text}
                               </span>
                             </td>
@@ -984,9 +997,14 @@ const STAT_COLS: { key: keyof DraftBoardPlayer["avgs"]; label: string; pct?: boo
 /** Composite scores kept after the stat columns (O1 shows here when another sort is chosen). */
 const MORE_COLS = SORT_CHIPS.filter((c) => c.key === "o1" || c.key === "off" || c.key === "def" || c.key === "eff");
 
+/** No value (e.g. no 2025-26 games on Last): dim dash, never 0.0, never shaded. */
+const DASH = "—";
 function fmtAvg(v: number | null | undefined, pct?: boolean): string {
-  if (!finite(v)) return "n/a";
+  if (!finite(v)) return DASH;
   return (pct ? v * 100 : v).toFixed(1);
+}
+function fmtCatScore(v: number | null | undefined): string {
+  return finite(v) ? v.toFixed(0) : DASH;
 }
 
 const PILL_CLASS: Record<Band, string> = {

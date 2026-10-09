@@ -1445,3 +1445,14 @@
     padding-right: 32px;
   }
 }
+
+.thView {
+  font-weight: 400;
+  font-variant: small-caps;
+  opacity: 0.7;
+}
+@media (max-width: 640px) {
+  .thView {
+    display: none;
+  }
+}
