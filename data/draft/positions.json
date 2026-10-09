@@ -1,0 +1,2609 @@
+{
+ "source": "NBA player index (stats.nba.com playerindex), pulled 2026-10-08; NBA-listed positions mapped to Yahoo slots, broader than Yahoo eligibility",
+ "mapping": {
+  "G": [
+   "PG",
+   "SG",
+   "G"
+  ],
+  "F": [
+   "SF",
+   "PF",
+   "F"
+  ],
+  "C": [
+   "C"
+  ],
+  "G-F": [
+   "SG",
+   "SF",
+   "G",
+   "F"
+  ],
+  "F-G": [
+   "SG",
+   "SF",
+   "G",
+   "F"
+  ],
+  "F-C": [
+   "PF",
+   "C",
+   "F"
+  ],
+  "C-F": [
+   "PF",
+   "C",
+   "F"
+  ]
+ },
+ "no_listing": "Util and BN only",
+ "players": {
+  "1626157": {
+   "nba_position": "C-F",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1626162": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1626164": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1626167": {
+   "nba_position": "C-F",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1626171": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1626181": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1626220": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627734": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627739": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627742": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627749": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627750": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627751": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627752": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627759": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627783": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627826": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627832": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1627884": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628368": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628369": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628370": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628374": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628378": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628381": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628384": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628386": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628389": {
+   "nba_position": "C-F",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628392": {
+   "nba_position": "C-F",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628398": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628401": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628404": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628415": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628960": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628969": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628970": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628971": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628973": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628976": {
+   "nba_position": "C-F",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628978": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628983": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628989": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1628991": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629001": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629004": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629008": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629012": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629013": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629014": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629022": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629023": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629027": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629028": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629029": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629060": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629111": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629130": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629611": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629614": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629622": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629627": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629628": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629630": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629631": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629632": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629636": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629638": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629639": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629640": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629645": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629651": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629652": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629656": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629660": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629661": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629673": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629674": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629675": {
+   "nba_position": "C-F",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1629731": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630162": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630163": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630166": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630168": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630169": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630170": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630171": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630173": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630174": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630178": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630180": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630183": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630191": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630193": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630200": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630202": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630217": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630224": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630228": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630230": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630241": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630245": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630286": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630314": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630527": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630529": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630530": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630532": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630533": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630540": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630541": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630552": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630558": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630559": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630567": {
+   "nba_position": "F-G",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630572": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630573": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630577": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630578": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630581": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630583": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630590": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630591": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630595": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630596": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630598": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630692": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630700": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1630703": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631094": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631095": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631096": {
+   "nba_position": "C-F",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631097": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631099": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631101": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631105": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631106": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631108": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631109": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631113": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631114": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631117": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631128": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631157": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631170": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631174": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631200": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631212": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631214": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631217": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631221": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631222": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631230": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631260": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631338": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631342": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1631351": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641705": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641706": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641708": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641709": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641710": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641716": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641717": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641718": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641726": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641727": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641729": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641730": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641731": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641739": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641744": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641757": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641764": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641771": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641778": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641783": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641796": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641824": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1641869": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642258": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642259": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642262": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642263": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642264": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642267": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642268": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642270": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642271": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642273": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642276": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642281": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642285": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642345": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642347": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642349": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642363": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642377": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642380": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642461": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642490": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642504": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642843": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642844": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642845": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642846": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642847": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642848": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642849": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642851": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642852": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642856": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642860": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642867": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642875": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642882": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642883": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642907": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1642955": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1643016": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1643060": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "1643133": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "1643158": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "1643253": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "201142": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "201566": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "201572": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "201935": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "201939": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "201942": {
+   "nba_position": "G-F",
+   "slots": [
+    "SG",
+    "SF",
+    "G",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "201950": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "202331": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "202681": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "202695": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "202696": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "202699": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "202710": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203076": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203078": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "203081": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "203084": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203110": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203114": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203468": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "203471": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "203497": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "203500": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "203501": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "203507": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203897": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "203924": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203932": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203935": {
+   "nba_position": "G",
+   "slots": [
+    "PG",
+    "SG",
+    "G",
+    "Util",
+    "BN"
+   ]
+  },
+  "203944": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203952": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203954": {
+   "nba_position": "C-F",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "203994": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "203999": {
+   "nba_position": "C",
+   "slots": [
+    "C",
+    "Util",
+    "BN"
+   ]
+  },
+  "204001": {
+   "nba_position": "F-C",
+   "slots": [
+    "PF",
+    "C",
+    "F",
+    "Util",
+    "BN"
+   ]
+  },
+  "2544": {
+   "nba_position": "F",
+   "slots": [
+    "SF",
+    "PF",
+    "F",
+    "Util",
+    "BN"
+   ]
+  }
+ }
+}

@@ -825,14 +825,14 @@ function BoardBlock(props: {
                   <tr>
                     <th className={styles.thName}>
                       Player
-                      <span className={styles.thView}>{isThree ? " · 3yr score" : " · 2025-26 avg"}</span>
+                      <span className={styles.thView}>{isThree ? " · 3yr avg" : " · 2025-26 avg"}</span>
                     </th>
                     <th className={styles.thScore}>{scoreHead}</th>
                     <th className={styles.thAct}>
                       <span className={styles.srOnly}>Mine or taken</span>
                     </th>
                     {STAT_COLS.map((c) => (
-                      <th key={c.key} className={styles.thStat} title={isThree ? "3yr category score (0–100)" : "2025-26 per-game"}>
+                      <th key={c.key} className={styles.thStat} title={isThree ? "3yr per-game (2023-24 to 2025-26, games-weighted)" : "2025-26 per-game"}>
                         {c.label}
                       </th>
                     ))}
@@ -923,8 +923,11 @@ function BoardBlock(props: {
                           </span>
                         </td>
                         {STAT_COLS.map((c) => {
+                          // 3yr: Analyst per-game averages; score fallback only if a player has none published.
                           const text = isThree
-                            ? fmtCatScore(row.player.three_yr?.scores[STATLINE_SCORE_KEY[c.key]])
+                            ? row.player.avgs_3yr
+                              ? fmtAvg(row.player.avgs_3yr[c.key], c.pct)
+                              : fmtCatScore(row.player.three_yr?.scores[STATLINE_SCORE_KEY[c.key]])
                             : fmtAvg(row.player.avgs[c.key], c.pct);
                           const band = text === DASH ? null : colBands[c.key];
                           return (
@@ -997,8 +1000,8 @@ const STAT_COLS: { key: keyof DraftBoardPlayer["avgs"]; label: string; pct?: boo
 /** Composite scores kept after the stat columns (O1 shows here when another sort is chosen). */
 const MORE_COLS = SORT_CHIPS.filter((c) => c.key === "o1" || c.key === "off" || c.key === "def" || c.key === "eff");
 
-/** No value (e.g. no 2025-26 games on Last): dim dash, never 0.0, never shaded. */
-const DASH = "—";
+/** No value (e.g. no 2025-26 games on Last): dim "n/a" (Cavin rule), never 0.0, never shaded. */
+const DASH = "n/a";
 function fmtAvg(v: number | null | undefined, pct?: boolean): string {
   if (!finite(v)) return DASH;
   return (pct ? v * 100 : v).toFixed(1);

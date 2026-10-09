@@ -57,6 +57,10 @@ export type DraftBoardPlayer = {
   scores: DraftWindowScores;
   avgs: DraftAverages;
   three_yr: DraftThreeYear | null;
+  /** Analyst 3yr per-game (GP-weighted, seasons played only; FG%/FT% made/attempted). Null if not published. */
+  avgs_3yr: (DraftAverages & { gp: number | null }) | null;
+  /** NBA listing (Analyst positions.json, NBA player index Oct 8). Null = no listing → Util/BN only. */
+  position: { nba_position: string; slots: string[] } | null;
 };
 
 export type DraftNeighbor = {
@@ -133,6 +137,18 @@ function scoresFrom(raw: Record<string, unknown>, suffix: "" | "_3yr"): DraftWin
 
 let cache: { key: string; payload: DraftBoardPayload } | null = null;
 
+type AnalystJson = { players?: Record<string, Record<string, unknown>> };
+function readAnalystJson(file: string): Record<string, Record<string, unknown>> {
+  const p = path.join(process.cwd(), "data/draft", file);
+  if (!existsSync(p)) return {};
+  try {
+    const raw = JSON.parse(readFileSync(p, "utf8")) as AnalystJson;
+    return raw && typeof raw.players === "object" && raw.players ? raw.players : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function getDraftBoard(): Promise<DraftBoardPayload> {
   const lastPath =
     process.env.NBA_FANTASY_SCORE_PATH ||
@@ -186,6 +202,9 @@ export async function getDraftBoard(): Promise<DraftBoardPayload> {
     threeById.set(String(row.player_id), row);
   }
 
+  const avg3 = readAnalystJson("averages_3yr.json");
+  const positions = readAnalystJson("positions.json");
+
   const players: DraftBoardPlayer[] = last.map((raw) => {
     const player_id = String(raw.player_id);
     const three = threeById.get(player_id);
@@ -220,6 +239,27 @@ export async function getDraftBoard(): Promise<DraftBoardPayload> {
         tov: toNullable(raw.avg_tov),
       },
       three_yr,
+      avgs_3yr: avg3[player_id]
+        ? {
+            gp: toNullable(avg3[player_id].gp_3yr),
+            pts: toNullable(avg3[player_id].avg_pts),
+            reb: toNullable(avg3[player_id].avg_reb),
+            ast: toNullable(avg3[player_id].avg_ast),
+            stl: toNullable(avg3[player_id].avg_stl),
+            blk: toNullable(avg3[player_id].avg_blk),
+            fg3m: toNullable(avg3[player_id].avg_fg3m),
+            fg_pct: toNullable(avg3[player_id].fg_pct),
+            ft_pct: toNullable(avg3[player_id].ft_pct),
+            tov: toNullable(avg3[player_id].avg_tov),
+          }
+        : null,
+      position:
+        positions[player_id] && Array.isArray(positions[player_id].slots)
+          ? {
+              nba_position: String(positions[player_id].nba_position ?? ""),
+              slots: (positions[player_id].slots as unknown[]).map(String),
+            }
+          : null,
     };
   });
 
