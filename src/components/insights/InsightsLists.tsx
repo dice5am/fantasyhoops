@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { StatLine, type StatLineValues } from "@/components/StatLine";
+import { ListIcon, ListIconLegend } from "@/components/draft/ListIcons";
 import { formatShortName } from "@/lib/formatName";
 import type {
   InsightLeap,
@@ -183,6 +184,9 @@ function ListCard({
     <section className={styles.card} id={`list-${list.id}`} aria-labelledby={`t-${list.id}`} data-list-id={list.id}>
       <div className={styles.cardHead}>
         <h2 className={styles.cardTitle} id={`t-${list.id}`}>
+          <span className={styles.titleIcon} aria-hidden="true">
+            <ListIcon id={list.id} title={list.title} size={20} />
+          </span>
           {list.title}
         </h2>
         {provisional ? <span className={styles.prov}>provisional</span> : null}
@@ -215,6 +219,7 @@ function ListCard({
 
 export function InsightsLists({ data, avgs, directory }: Props) {
   const [query, setQuery] = useState("");
+  const [iconsOpen, setIconsOpen] = useState(false);
   const lists = useMemo(() => data?.lists ?? [], [data]);
   const preliminary = data?.status === "preliminary";
 
@@ -267,6 +272,17 @@ export function InsightsLists({ data, avgs, directory }: Props) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <button
+          type="button"
+          className={styles.iconsBtn}
+          aria-expanded={iconsOpen}
+          onClick={() => setIconsOpen((o) => !o)}
+        >
+          Icons
+        </button>
+        {iconsOpen ? (
+          <ListIconLegend membership={{ lists: lists.map((l) => ({ id: l.id, title: l.title })), byPlayer: {}, order: {} }} />
+        ) : null}
         <nav className={styles.jump} aria-label="Jump to list">
           {lists.map((l) => (
             <a key={l.id} href={`#list-${l.id}`} className={styles.jumpChip}>
